@@ -1,14 +1,23 @@
-# GATORv1 🐊
+# Gatorset v0.1 🐊
 
-# classes
+path: ./
+train: train/images
+val: validation/images
+
+# Classes
 names:
-  0: Animal # cat, dog, etc.
-  1: Car # sedan, coupe, van, pickup truck
-  2: Truck # large truck (18-wheeler), UPS, FEDEX, garbage truck, buses
-  3: Ped # pedestrian, pedestrian with walker/stroller
-  4: Stop # stop sign
-  5: Trash # trash bin, other stationary objects on street, roadkill
-  6: GTL # green traffic light
-  7: YTL # yellow traffic light
-  8: RTL # red traffic light 
-  9: Construction # traffics cones, barrels, barriels, etc.
+  0: person        
+  1: bicycle       
+  2: car
+  3: motorcycle    
+  4: bus
+  5: truck
+  6: stop sign    
+  7: cat
+  8: dog
+  9: horse
+  10: sheep
+  11: cow
+  12: frisbee
+  13: sports ball
+  14: skateboard
