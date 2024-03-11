@@ -33,8 +33,6 @@ class label_with_autodistill:
         remove_dir(self.annotated_images_dir)
         remove_dir(self.dataset_dir)
         remove_dir(self.run_dir)
-        # remove_dir(f"{self.home_dir}/dataset")
-        # IMAGE_DIR_PATH = f"{HOME}/dataset/train/images"
         
 
     def convert_images_to_png(self, input_images_folder):
@@ -87,9 +85,9 @@ class label_with_autodistill:
 
 
     def save_annotated_images(self):
-        images_directory_path = os.path.join(self.home_dir, "dataset/train/images")
-        annotations_directory_path = os.path.join(self.home_dir, "dataset/train/labels")
-        data_yaml_path = os.path.join(self.home_dir, "dataset/train/data.yaml")
+        images_directory_path = os.path.join(self.home_dir, "dataset", "train", "images")
+        annotations_directory_path = os.path.join(self.home_dir, "dataset", "train", "labels")
+        data_yaml_path = os.path.join(self.home_dir, "dataset", "train", "data.yaml")
 
         dataset = sv.DetectionDataset.from_yolo(
             images_directory_path=images_directory_path,
