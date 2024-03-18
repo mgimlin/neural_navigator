@@ -1,0 +1,7 @@
+names:
+- truck
+- car
+- sports ball
+nc: 3
+train: c:\Users\timothy.b.joseph\Documents\NeuralNavigator\neural_navigator\auto_label\dataset/train/images
+val: c:\Users\timothy.b.joseph\Documents\NeuralNavigator\neural_navigator\auto_label\dataset/valid/images
