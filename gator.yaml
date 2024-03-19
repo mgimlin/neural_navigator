@@ -1,0 +1,32 @@
+# Gator 🐊
+
+path: ../datasets/gator
+train: train.txt
+val: val.txt
+
+# Classes
+names:
+  0: person        
+  1: bicycle       
+  2: car
+  3: motorcycle    
+  4: bus
+  5: truck
+  6: stop sign    
+  7: cat
+  8: dog
+  9: horse
+  10: sheep
+  11: cow
+  12: frisbee
+  13: sports ball
+  14: skateboard
+  15: GTL
+  16: RTL
+  17: YTL
+  18: construction
+  19: scooter
+  20: semi
+  21: trafficBarrel
+  22: trash
+  23: van
