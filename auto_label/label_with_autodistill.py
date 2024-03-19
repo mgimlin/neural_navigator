@@ -6,6 +6,7 @@ import supervision as sv
 import cv2
 from autodistill.detection import CaptionOntology
 from autodistill_grounded_sam import GroundedSAM
+import roboflow
 from roboflow import Roboflow
 
 
@@ -60,34 +61,12 @@ class label_with_autodistill:
                         img.save(output_file, "PNG")
                 except IOError:
                     print(f"Failed to convert {filename}. It might not be an image file.")
-        
-
-    # def display_input_images(self):
-    #     image_paths = sv.list_files_with_extensions(
-    #         directory=self.images_dir,
-    #         extensions=["png", "jpg", "jpg"])
-    #     print('image count:', len(image_paths))
-
-    #     SAMPLE_SIZE = 16
-    #     SAMPLE_GRID_SIZE = (4, 4)
-    #     SAMPLE_PLOT_SIZE = (16, 16)
-
-    #     titles = [
-    #         image_path.stem
-    #         for image_path
-    #         in image_paths[:SAMPLE_SIZE]]
-    #     images = [
-    #         cv2.imread(str(image_path))
-    #         for image_path
-    #         in image_paths[:SAMPLE_SIZE]]
-
-    #     sv.plot_images_grid(images=images, titles=titles, grid_size=SAMPLE_GRID_SIZE, size=SAMPLE_PLOT_SIZE)
 
 
     def save_annotated_images(self):
-        images_directory_path = os.path.join(self.home_dir, "dataset", "train", "images")
-        annotations_directory_path = os.path.join(self.home_dir, "dataset", "train", "labels")
-        data_yaml_path = os.path.join(self.home_dir, "dataset", "train", "data.yaml")
+        images_directory_path = os.path.join(self.dataset_dir, "train", "images")
+        annotations_directory_path = os.path.join(self.dataset_dir, "train", "labels")
+        data_yaml_path = os.path.join(self.dataset_dir, "train", "data.yaml")
 
         dataset = sv.DetectionDataset.from_yolo(
             images_directory_path=images_directory_path,
@@ -131,15 +110,11 @@ class label_with_autodistill:
 
     def train(self, ontology):
         ontology=CaptionOntology(ontology=ontology)
-
-        input_folder = os.path.join(self.home_dir, "images")
-        dataset_folder = os.path.join(self.home_dir, "dataset")
-
         base_model = GroundedSAM(ontology=ontology)
         self.dataset = base_model.label(
-            input_folder=input_folder,
+            input_folder=self.images_dir,
             extension=".png",
-            output_folder=dataset_folder)
+            output_folder=self.dataset_dir)
         
 
     def upload_annotations(self):
@@ -161,16 +136,14 @@ class label_with_autodistill:
             annotation=f"{dataset_name}-yolo-format")
 
         # # Directory paths
-        images_dir = os.path.join(self.home_dir, "/dataset/train/images")
-        annotations_dir = os.path.join(self.home_dir, "/dataset/train/labels")
-        
+        images_dir = os.path.join(self.dataset_dir, "train", "images")
+        annotations_dir = os.path.join(self.dataset_dir, "train", "labels")
 
         # List all image files
         image_paths = sv.list_files_with_extensions(directory=images_dir, extensions=["jpg", "jpeg", "png"])
 
         # # Upload images and their annotations to Roboflow
         for image_path in tqdm(image_paths):
-            image_name = image_path.name
             annotation_name = f"{image_path.stem}.txt"  # YOLO annotations are .txt files
             annotation_path = os.path.join(annotations_dir, annotation_name)
             
@@ -189,8 +162,9 @@ class label_with_autodistill:
 
 x = label_with_autodistill()
 
-x.remove_folders()
-print()
-input_images_folder = os.path.join(os.getcwd(), "images_input")
-x.convert_images_to_png(input_images_folder)
-print()
+# x.remove_folders()
+# print()
+# input_images_folder = os.path.join(os.getcwd(), "images_input")
+# x.convert_images_to_png(input_images_folder)
+# print()
+x.upload_annotations()
