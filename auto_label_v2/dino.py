@@ -60,20 +60,21 @@ class dino:
         # %matplotlib inline  
         sv.plot_image(annotated_frame, (16, 16))
 
-    def get_roboflow_image(self, workspace, project, dataset):
+    def get_roboflow_images_path(self, workspace, project, dataset):
         roboflow.login()
         rf = roboflow.Roboflow()
         robo_project = rf.workspace(workspace).project(project)
         robo_dataset = robo_project.version(3).download(dataset)
-        subdirectory = "valid"
+        subdirectory = "all"
+        # subdirectory = "valid"
 
         image_directory_path = f"{robo_dataset.location}/{subdirectory}"
-        image_names = os.listdir(image_directory_path)
+        # image_names = os.listdir(image_directory_path)
         # image_index = randrange(len(image_names))
-        image_name = image_names[0]
-        image_path = os.path.join(image_directory_path, image_name)
+        # image_name = image_names[0]
+        # image_path = os.path.join(image_directory_path, image_name)
 
-        return image_path        
+        return image_directory_path        
     
 
 

@@ -10,6 +10,8 @@ import roboflow
 from roboflow import Roboflow
 
 
+
+
 def remove_dir(directory):
     if os.path.isdir(directory):
         shutil.rmtree(directory)
@@ -63,7 +65,7 @@ class label_with_autodistill:
                     print(f"Failed to convert {filename}. It might not be an image file.")
 
 
-    def save_annotated_images(self):
+    def annotated_and_save_images(self):
         images_directory_path = os.path.join(self.dataset_dir, "train", "images")
         annotations_directory_path = os.path.join(self.dataset_dir, "train", "labels")
         data_yaml_path = os.path.join(self.dataset_dir, "train", "data.yaml")
@@ -134,6 +136,9 @@ class label_with_autodistill:
             project_license="MIT",
             project_type="instance-segmentation",
             annotation=f"{dataset_name}-yolo-format")
+        
+        # rf = roboflow.Roboflow()
+        # rf.workspace(workspace).project(project)
 
         # # Directory paths
         images_dir = os.path.join(self.dataset_dir, "train", "images")
