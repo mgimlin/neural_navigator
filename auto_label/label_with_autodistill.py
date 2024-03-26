@@ -10,8 +10,6 @@ import roboflow
 from roboflow import Roboflow
 
 
-
-
 def remove_dir(directory):
     if os.path.isdir(directory):
         shutil.rmtree(directory)
@@ -167,9 +165,43 @@ class label_with_autodistill:
 
 x = label_with_autodistill()
 
-# x.remove_folders()
-# print()
-# input_images_folder = os.path.join(os.getcwd(), "images_input")
-# x.convert_images_to_png(input_images_folder)
-# print()
+x.remove_folders()
+input_images_folder = os.path.join(os.getcwd(), "images_input")
+ontonlogy={
+    "garbage truck, large truck": "truck",
+    "car, semi-truck": "car",
+    # "cat" : "cat",
+    # "dog" :"dog",
+    # "sheep": "sheep", 
+    # "cow" : "cow",
+    # "horse" : "horse" ,
+    # "semi-truck" : "semi-truck",
+    # "garbage truck" : "garbage truck",
+    # "bus" : "bus",
+    # "stop sign" : "stop sign",
+    # "green traffic light" : "green traffic light",
+    # "yellow traffic light" : "yellow traffic light",
+    # "red traffic light" : "red traffic light",
+    # "trash bin" : "trash bin",
+    # "scooter" : "scooter",
+    # "bicycle" : "bicycle",
+    # "motorbike" : "motorbike",
+    # "construction" : "construction barrels",
+    # "trafficBarrel" : "traffic barrel, traffic cones, barrels",
+    # "pedestrians" : "pedestrians and people",
+    # "sports ball" : "sports ball",
+    # "frisbee" : "frisbee",
+}
+
+
+x.train(ontonlogy)
+
+print("here2")
+
+input_images_folder = os.path.join(os.getcwd(), "images_input")
+x.convert_images_to_png(input_images_folder)
+
+
+x.annotated_and_save_images()
+print()
 x.upload_annotations()
