@@ -63,26 +63,25 @@ class label_with_autodistill:
                     print(f"Failed to convert {filename}. It might not be an image file.")
 
 
-    def annotated_and_save_images(self):
+    def save_images_locally(self):
         images_directory_path = os.path.join(self.dataset_dir, "train", "images")
         annotations_directory_path = os.path.join(self.dataset_dir, "train", "labels")
-        data_yaml_path = os.path.join(self.dataset_dir, "train", "data.yaml")
+        data_yaml_path = os.path.join(self.dataset_dir, "data.yaml")
 
         dataset = sv.DetectionDataset.from_yolo(
             images_directory_path=images_directory_path,
             annotations_directory_path=annotations_directory_path,
             data_yaml_path=data_yaml_path)
 
-        len(dataset)
-
         image_names = list(dataset.images.keys())[:20]
 
         mask_annotator = sv.MaskAnnotator()
         box_annotator = sv.BoxAnnotator()
 
-        print(dataset.classes)
+        print("classes:", dataset.classes)
 
         output_directory = os.path.join(self.home_dir, "annotated_images")
+
         os.makedirs(output_directory, exist_ok=True)
 
         images = []
@@ -102,42 +101,22 @@ class label_with_autodistill:
                 labels=labels)
             images.append(annotates_image)
 
-            output_path = os.path.join(output_directory, f"{image_name}_annotated.png")
+            output_path = os.path.join(output_directory)
 
-            with sv.ImageSink(target_dir_path=output_path) as sink:
+            with sv.ImageSink(target_dir_path=output_path, image_name_pattern=f"{image_name}_annotated.png") as sink:
                 sink.save_image(image=annotates_image)
 
 
-    def train(self, ontology):
+    def annotate(self, ontology):
         ontology=CaptionOntology(ontology=ontology)
+
         base_model = GroundedSAM(ontology=ontology)
         self.dataset = base_model.label(
             input_folder=self.images_dir,
             extension=".png",
             output_folder=self.dataset_dir)
-        
 
-    def upload_annotations(self):
-        # # Login to Roboflow
-        roboflow.login()
-
-        # # Access your workspace
-        workspace = Roboflow().workspace()
-
-        # # Assuming `dataset.name` is available from the previous steps
-        # # Replace 'your_dataset_name_here' with the actual name of your dataset
-        dataset_name = 'upload-test'
-
-        # # Create a new project in Roboflow
-        new_project = workspace.create_project(
-            project_name=dataset_name,
-            project_license="MIT",
-            project_type="instance-segmentation",
-            annotation=f"{dataset_name}-yolo-format")
-        
-        # rf = roboflow.Roboflow()
-        # rf.workspace(workspace).project(project)
-
+    def upload_annotations(self, project):
         # # Directory paths
         images_dir = os.path.join(self.dataset_dir, "train", "images")
         annotations_dir = os.path.join(self.dataset_dir, "train", "labels")
@@ -152,7 +131,7 @@ class label_with_autodistill:
             
             # Only upload if the annotation file exists for the image
             if os.path.exists(annotation_path):
-                new_project.upload(
+                project.upload(
                     image_path=str(image_path),
                     annotation_path=annotation_path,
                     split="train",  # Assuming all images are for training
@@ -163,13 +142,43 @@ class label_with_autodistill:
                 )
 
 
-x = label_with_autodistill()
 
+
+# ****************** 1. Setup
+x = label_with_autodistill()
 x.remove_folders()
+print()
+
+
+
+
+
+# ****************** 2. Convert input images to png
+# roboflow.login()
+# workspace = "neuralnavigator-94vew"
+# dataset_name = "upload-test-dtbe0"
+# format = "coco"
+# subdirectory = "all"
+
+# robo_project = Roboflow().workspace(workspace).project(dataset_name)
+# robo_dataset = robo_project.version(0).download(format)
+# input_images_folder = f"{robo_dataset.location}/{subdirectory}"
+
 input_images_folder = os.path.join(os.getcwd(), "images_input")
-ontonlogy={
-    "garbage truck, large truck": "truck",
-    "car, semi-truck": "car",
+x.convert_images_to_png(input_images_folder)
+print()
+
+
+
+
+
+# ****************** 3. Annotate images with text prompt (ontology)
+ontology = {
+    # "all trucks": "truck",
+    "cars": "cars",
+        # "cars": "car",
+        # "cars": "all car",
+        # "cars": "all cars",
     # "cat" : "cat",
     # "dog" :"dog",
     # "sheep": "sheep", 
@@ -192,16 +201,27 @@ ontonlogy={
     # "sports ball" : "sports ball",
     # "frisbee" : "frisbee",
 }
-
-
-x.train(ontonlogy)
-
-print("here2")
-
-input_images_folder = os.path.join(os.getcwd(), "images_input")
-x.convert_images_to_png(input_images_folder)
-
-
-x.annotated_and_save_images()
+x.annotate(ontology=ontology)
 print()
-x.upload_annotations()
+
+
+
+
+
+
+
+# ****************** 4. Upload to roboflow
+workspace = "neuralnavigator-94vew"
+dataset_name = 'upload-test-2'
+
+# **** Option 1: open existing project
+project = Roboflow().workspace(workspace).project(dataset_name)
+
+# **** Option 2: create new project
+# new_project = Roboflow().workspace().create_project(
+#     project_name=dataset_name,
+#     project_license="MIT",
+#     project_type="instance-segmentation",
+#     annotation=f"{dataset_name}-yolo-format")
+
+x.upload_annotations(project)
