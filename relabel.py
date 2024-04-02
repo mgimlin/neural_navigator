@@ -27,15 +27,15 @@ LABELS = {
     '3': '1', # bike
     '4': '4', # bus
     '5': '2', # car
-    '6': '18', # construction
-    '7': '3', # motorbike
-    '8': '0', # ped
-    '9': '19', # scooter
-    '10': '20', # semi
-    '11': '21', # trafficBarrel
-    '12': '22', # trash
-    '13': '5', # truck
-    '14': '23', # van
+    '6': '18', # construction 
+    '7': '8', # dog 
+    '8': '3', # motorcyle
+    '9': '0', # person
+    '10': '19', # scooter
+    '11': '6', # stop
+    '12': '21', # traffic barrel
+    '13': '22', # trash
+    '14': '5', # truck
 }
 
 def filter_files(img_path: str,
