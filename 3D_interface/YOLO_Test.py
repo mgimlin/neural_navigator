@@ -1,6 +1,5 @@
 import cv2
 import supervision as sv
-import numpy as np
 from ultralytics import YOLO
 
 def main():
@@ -16,6 +15,8 @@ def main():
     box_annotator = sv.BoundingBoxAnnotator()
     label_annotator = sv.LabelAnnotator()
 
+    specificClassID = 67 # change for a different class you want the info for
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -23,11 +24,22 @@ def main():
 
         result = model(frame)[0]
         detections = sv.Detections.from_ultralytics(result)
-       
+
+        specificClass = [detection for detection in detections if detection[3] == specificClassID]
+        for detection in specificClass:
+            specificClassBB = detection[0]
+
+            x1, y1, x2, y2 = specificClassBB
+
+            xCenter = (x1 + x2) / 2
+            yCenter = (y1 + y2) / 2
+
+            print(f"Center Coordinates: ({xCenter}, {yCenter})")
+
         labels = [f"{model.model.names[class_id]} {confidence:0.2f}" for _, _, confidence, class_id, _, _ in detections]
         frame = box_annotator.annotate(scene=frame, detections=detections)
         frame = label_annotator.annotate(scene=frame, detections=detections, labels=labels)
-
+        
         cv2.imshow('YOLOv8', frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
