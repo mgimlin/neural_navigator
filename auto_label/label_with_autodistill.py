@@ -9,7 +9,6 @@ from autodistill_grounded_sam import GroundedSAM
 import roboflow
 from roboflow import Roboflow
 
-import torch
 
 def remove_dir(directory):
     if os.path.isdir(directory):
@@ -167,7 +166,7 @@ roboflow.login()
 
 input_images_folder = os.path.join(os.getcwd(), "images_input")
 x.convert_images_to_png(input_images_folder)
-print(torch.cuda.is_available())
+print()
 
 
 
@@ -202,8 +201,6 @@ ontology = {
     # "sports ball" : "sports ball",
     # "frisbee" : "frisbee",
 }
-
-print("HERE")
 x.annotate(ontology=ontology)
 print()
 
