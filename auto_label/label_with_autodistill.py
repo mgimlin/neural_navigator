@@ -9,6 +9,7 @@ from autodistill_grounded_sam import GroundedSAM
 import roboflow
 from roboflow import Roboflow
 
+import torch
 
 def remove_dir(directory):
     if os.path.isdir(directory):
@@ -154,7 +155,7 @@ print()
 
 
 # ****************** 2. Convert input images to png
-# roboflow.login()
+roboflow.login()
 # workspace = "neuralnavigator-94vew"
 # dataset_name = "upload-test-dtbe0"
 # format = "coco"
@@ -166,7 +167,7 @@ print()
 
 input_images_folder = os.path.join(os.getcwd(), "images_input")
 x.convert_images_to_png(input_images_folder)
-print()
+print(torch.cuda.is_available())
 
 
 
@@ -201,6 +202,8 @@ ontology = {
     # "sports ball" : "sports ball",
     # "frisbee" : "frisbee",
 }
+
+print("HERE")
 x.annotate(ontology=ontology)
 print()
 
