@@ -147,6 +147,7 @@ class label_with_autodistill:
 # ****************** 1. Setup
 x = label_with_autodistill()
 x.remove_folders()
+roboflow.login()
 print()
 
 
@@ -154,7 +155,6 @@ print()
 
 
 # ****************** 2. Convert input images to png
-roboflow.login()
 # workspace = "neuralnavigator-94vew"
 # dataset_name = "upload-test-dtbe0"
 # format = "coco"
@@ -225,3 +225,11 @@ project = Roboflow().workspace(workspace).project(dataset_name)
 #     annotation=f"{dataset_name}-yolo-format")
 
 x.upload_annotations(project)
+
+
+
+
+
+
+# ****************** 5. Save Locally
+x.save_images_locally()
