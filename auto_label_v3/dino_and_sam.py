@@ -188,17 +188,18 @@ x.save_images_locally()
 
 
 workspace = "neuralnavigator-94vew"
-dataset_name = 'upload-test-4'
+dataset_name = 'upload-test-2'
 
 # **** Option 1: open existing project
 roboflow.login()
-# project = roboflow.Roboflow().workspace(workspace).project(dataset_name)
+project = roboflow.Roboflow().workspace(workspace).project(dataset_name)
 
 # **** Option 2: create new project
-project = roboflow.Roboflow().workspace(workspace).create_project(
-    project_name=dataset_name,
-    project_license="MIT",
-    project_type="instance-segmentation",
-    annotation=f"{dataset_name}-yolo-format")
+# project = roboflow.Roboflow().workspace(workspace).create_project(
+#     project_name=dataset_name,
+#     project_license="MIT",
+#     project_type="instance-segmentation",
+#     annotation=f"{dataset_name}-yolo-format")
 
 x.upload_annotations(project)
+
