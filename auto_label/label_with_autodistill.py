@@ -7,7 +7,6 @@ import cv2
 from autodistill.detection import CaptionOntology
 from autodistill_grounded_sam import GroundedSAM
 import roboflow
-from roboflow import Roboflow
 
 
 def remove_dir(directory):
@@ -160,7 +159,7 @@ print()
 # format = "coco"
 # subdirectory = "all"
 
-# robo_project = Roboflow().workspace(workspace).project(dataset_name)
+# robo_project = roboflow.Roboflow().workspace(workspace).project(dataset_name)
 # robo_dataset = robo_project.version(0).download(format)
 # input_images_folder = f"{robo_dataset.location}/{subdirectory}"
 
@@ -215,16 +214,17 @@ workspace = "neuralnavigator-94vew"
 dataset_name = 'upload-test-2'
 
 # **** Option 1: open existing project
-project = Roboflow().workspace(workspace).project(dataset_name)
+project = roboflow.Roboflow().workspace(workspace).project(dataset_name)
 
 # **** Option 2: create new project
-# new_project = Roboflow().workspace().create_project(
+# project = roboflow.Roboflow().workspace(workspace).create_project(
 #     project_name=dataset_name,
 #     project_license="MIT",
 #     project_type="instance-segmentation",
 #     annotation=f"{dataset_name}-yolo-format")
 
 x.upload_annotations(project)
+
 
 
 
