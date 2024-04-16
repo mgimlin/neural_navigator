@@ -1,4 +1,5 @@
 import os
+import shutil
 from groundingdino.util.inference import Model
 from segment_anything import sam_model_registry, SamPredictor
 import torch
@@ -6,11 +7,22 @@ import cv2
 import supervision as sv
 from tqdm import tqdm
 import numpy as np
-from PIL import Image
+import roboflow
+
+
+def remove_dir(directory):
+    if os.path.isdir(directory):
+        shutil.rmtree(directory)
+        print(f"Directory {directory} and its contents removed successfully.")
+    else:
+        print(f"Directory {directory} does not exist.")
+
 
 class dino:
     def __init__(self, home_dir=os.getcwd()):
-        self.home_dir = home_dir
+        self.home_dir = home_dir    
+        os.makedirs("annotated_images", exist_ok=True)
+
 
     def load_dino_sam(self, input_sam_path="sam_vit_h_4b8939.pth", input_weights_path="groundingdino_swint_ogc.pth", input_config_path="GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"):
         config_path = os.path.join(self.home_dir, input_config_path)
@@ -28,18 +40,36 @@ class dino:
             return
         self.sam = SamPredictor(sam_model_registry[SAM_ENCODER_VERSION](checkpoint=SAM_CHECKPOINT_PATH).to(device=DEVICE))
 
-    def annotate_images(self, images_path, labels_path, classes):
-        images = []
-        annotations = []
+
+    def annotate_images(self, images_path, classes):
+        images = {}
+        annotations = {}
+        file_names = []
+
         for filename in tqdm(os.listdir(images_path)):
             if not filename.startswith('.'):  # Ignore hidden files
                 file_path = os.path.join(images_path, filename)
-                self.filename = filename
                 image, detections = self.annotate(file_path, classes)
 
-                images.append(image)
-                annotations.append(detections)
+                images[filename] = image
+                annotations[filename] = detections
+                file_names.append(filename)
 
+        MIN_IMAGE_AREA_PERCENTAGE = 0.002
+        MAX_IMAGE_AREA_PERCENTAGE = 0.80
+        APPROXIMATION_PERCENTAGE = 0.75
+
+        sv.DetectionDataset(
+            classes=classes,
+            images=images,
+            annotations=annotations
+        ).as_yolo(
+            annotations_directory_path='annotations',
+            data_yaml_path="data.yaml",
+            min_image_area_percentage=MIN_IMAGE_AREA_PERCENTAGE,
+            max_image_area_percentage=MAX_IMAGE_AREA_PERCENTAGE,
+            approximation_percentage=APPROXIMATION_PERCENTAGE
+        )
 
 
     def annotate(self, image_path, classes):
@@ -58,6 +88,7 @@ class dino:
 
         return self.segment(image_path, detections, image, classes)
 
+
     def segment(self, image_path, detections, image, classes):
         self.sam.set_image(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         result_masks = []
@@ -71,54 +102,103 @@ class dino:
 
         detections.mask = np.array(result_masks)
 
-        # annotate image with detections
-        box_annotator = sv.BoxAnnotator()
-        mask_annotator = sv.MaskAnnotator()
-        labels = [
-            f"{classes[class_id]} {confidence:0.2f}" 
-            for _, _, confidence, class_id, _ 
-            in detections]
-        annotated_image = mask_annotator.annotate(scene=image.copy(), detections=detections)
-        annotated_image = box_annotator.annotate(scene=annotated_image, detections=detections, labels=labels)
-
-        with sv.ImageSink(target_dir_path="annotated_images", image_name_pattern=f"{self.filename}_annotated.png") as sink:
-            sink.save_image(image=annotated_image)
-
-
-
-        labels_dir = os.path.dirname(image_path.replace("images", "labels"))
-        os.makedirs(labels_dir, exist_ok=True)  # This creates the directory if it doesn't exist
-
-        detections_path = os.path.splitext(image_path.replace("images", "labels"))[0] + ".txt"
-
-        with open(detections_path, 'w') as f:
-            i = 0
-            for detection in detections.xyxy:
-                x_center, y_center, width, height = self.convert_to_yolo_format(image, detection)
-                class_id = detections.class_id[i]  # Assuming the class ID is at the 6th position
-                i += 1
-                f.write(f"{class_id} {x_center} {y_center} {width} {height}\n")
-
         return image, detections
 
 
-    def convert_to_yolo_format(self, image, detection):
-        dw = 1. / image.shape[1]
-        dh = 1. / image.shape[0]
-        x = (detection[0] + detection[2]) / 2.0
-        y = (detection[1] + detection[3]) / 2.0
-        w = detection[2] - detection[0]
-        h = detection[3] - detection[1]
-        x = x * dw
-        w = w * dw
-        y = y * dh
-        h = h * dh
-        return x, y, w, h
+    def save_images_locally(self):
+        images_directory_path = "images"
+        annotations_directory_path = "annotations"
+        data_yaml_path = "data.yaml"
+
+        dataset = sv.DetectionDataset.from_yolo(
+            images_directory_path=images_directory_path,
+            annotations_directory_path=annotations_directory_path,
+            data_yaml_path=data_yaml_path)
+
+        image_names = list(dataset.images.keys())[:20]
+
+        mask_annotator = sv.MaskAnnotator()
+        box_annotator = sv.BoxAnnotator()
+
+        print("classes:", dataset.classes)
+
+        output_directory = os.path.join(self.home_dir, "annotated_images")
+
+        os.makedirs(output_directory, exist_ok=True)
+
+        images = []
+        for image_name in image_names:
+            image = dataset.images[image_name]
+            annotations = dataset.annotations[image_name]
+            labels = [
+                dataset.classes[class_id]
+                for class_id
+                in annotations.class_id]
+            annotates_image = mask_annotator.annotate(
+                scene=image.copy(),
+                detections=annotations)
+            annotates_image = box_annotator.annotate(
+                scene=annotates_image,
+                detections=annotations,
+                labels=labels)
+            images.append(annotates_image)
+
+            output_path = os.path.join(output_directory)
+
+            with sv.ImageSink(target_dir_path=output_path, image_name_pattern=f"{image_name}_annotated.png") as sink:
+                sink.save_image(image=annotates_image)
+
+
+    def upload_annotations(self, project):
+
+        # List all image files
+        image_paths = sv.list_files_with_extensions(directory="images", extensions=["jpg", "jpeg", "png"])
+
+        # # Upload images and their annotations to Roboflow
+        for image_path in tqdm(image_paths):
+            annotation_name = f"{image_path.stem}.txt"  # YOLO annotations are .txt files
+            annotation_path = os.path.join("annotations", annotation_name)
+            
+            # Only upload if the annotation file exists for the image
+            if os.path.exists(annotation_path):
+                project.upload(
+                    image_path=str(image_path),
+                    annotation_path=annotation_path,
+                    split="train",  # Assuming all images are for training
+                    is_prediction=False,  # These are ground-truth annotations
+                    overwrite=True,  # Overwrite existing files if necessary
+                    tag_names=["auto-annotated-with-autodistill"],
+                    batch_name="auto-annotated-batch"
+                )
+
+
+
+remove_dir("annotations")
+remove_dir("annotated_images")
 
 
 x = dino()
 x.load_dino_sam()
-
-
 classes = ['cars']
-x.annotate_images("images", "labels", classes)
+x.annotate_images("images", classes)
+
+
+x.save_images_locally()
+
+
+
+workspace = "neuralnavigator-94vew"
+dataset_name = 'upload-test-4'
+
+# **** Option 1: open existing project
+roboflow.login()
+# project = roboflow.Roboflow().workspace(workspace).project(dataset_name)
+
+# **** Option 2: create new project
+project = roboflow.Roboflow().workspace(workspace).create_project(
+    project_name=dataset_name,
+    project_license="MIT",
+    project_type="instance-segmentation",
+    annotation=f"{dataset_name}-yolo-format")
+
+x.upload_annotations(project)
