@@ -5,10 +5,19 @@ from OpenGL.GLU import *
 from ultralytics import YOLO
 import cv2
 
-model = YOLO('yolov8n-seg.pt')
+import torch
+
+model = YOLO('../../yolo/best.pt')
 cam = cv2.VideoCapture(0) 
 if not cam.isOpened():
     exit()
+    
+model_type = "MiDaS_small"
+midas = torch.hub.load("intel-isl/MiDaS", model_type)
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+midas.to(device)
+midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
+transform = midas_transforms.small_transform
 
 # Window dimensions
 WIDTH = 800
@@ -60,16 +69,38 @@ def display():
     if not ret:
         return
 
+    # Object detection.
     results = model(frame)
+    
+    # Depth estimation.
+    img = frame
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    input_batch = transform(img).to(device)
+    with torch.no_grad():
+        prediction = midas(input_batch)
+        prediction = torch.nn.functional.interpolate(
+            prediction.unsqueeze(1),
+            size=img.shape[:2],
+            mode="bicubic",
+            align_corners=False,
+        ).squeeze()
+    depth_map = prediction.cpu().numpy()
 
     for result in results:
         for box in result.boxes.xyxyn:
+            center_x = (box[0] + box[2]) / 2
+            center_y = (box[1] + box[3]) / 2
+
+            # print(center_x, len(depth_map[0]), int(center_x * len(depth_map[0])))
+            depth = depth_map[int(center_x * len(depth_map))][int(center_y * len(depth_map[0]))]
+            
             glPushMatrix()
             glTranslatef(
-                20 * (box[0] + box[2]) / 2 - 10,
+                20 * center_x - 10,
                 -0.5,
                 # -5,
-                0 - 10 * (1 - abs(box[1] - box[3]))
+                # 0 - 10 * (1 - abs(box[1] - box[3]))
+                5 - 20 * depth / 1000
             )
             cube()
             glPopMatrix()
