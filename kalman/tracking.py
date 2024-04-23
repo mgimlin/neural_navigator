@@ -43,7 +43,7 @@ while cap.isOpened():
         for box, track_id in zip(boxes, track_ids):
             x, y, w, h = box
             track = track_history[track_id]
-            if not track: #empty
+            if (not track) or (len(track) == 1): #empty or only has 1 element
                 predicted = predict_next_position([(float(x), float(y))])
             else:
                 predicted = predict_next_position(track)
