@@ -167,7 +167,7 @@ class dino:
                     split="train",  # Assuming all images are for training
                     is_prediction=False,  # These are ground-truth annotations
                     overwrite=True,  # Overwrite existing files if necessary
-                    tag_names=["auto-annotated-with-autodistill"],
+                    tag_names=["auto-annotated-with-dino-and-sam"],
                     batch_name="auto-annotated-batch"
                 )
 
