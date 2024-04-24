@@ -35,6 +35,7 @@ def cube():
     glEnd()
 
 def draw_text(x, y, text):
+    glColor3fv((0, 0, 0))
     glWindowPos2f(x, y)
     for char in text:
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord(char))
@@ -42,7 +43,7 @@ def draw_text(x, y, text):
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
-    gluPerspective(45, (WIDTH / HEIGHT), 0.1, 50.0)
+    gluPerspective(90, (WIDTH / HEIGHT), 0.1, 50.0)
     glTranslatef(0.0, 0.0, -10)
 
     positions = [(-2, 0, 0), (0, 2, 0), (2, 0, 0)]
@@ -62,7 +63,8 @@ def display():
         x2D, y2D, z2D = gluProject(pos[0], pos[1] + 2, pos[2], modelview, projection, viewport)
 
         # Draw the label at projected 2D position
-        draw_text(x2D, viewport[3] - y2D, labels[i])  # Adjust for y-coordinate from bottom-left
+        # draw_text(x2D, viewport[3] - y2D, labels[i])  # Adjust for y-coordinate from bottom-left
+        draw_text(x2D, y2D, labels[i])  # Adjust for y-coordinate from bottom-left
 
     glutSwapBuffers()
 

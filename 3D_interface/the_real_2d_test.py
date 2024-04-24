@@ -53,7 +53,7 @@ AVERAGE_HEIGHTS = {
     'person': 1.77,
 }
 
-CAMERA_HEIGHT = 1.0
+CAMERA_HEIGHT = 1
 CAMERA_FOV_X = 90
 CAMERA_FOV_Y = 50
 CAMERA_TILT = 0
@@ -64,6 +64,26 @@ def calculate_x(x1: float, x2: float, depth: float) -> float:
     x = depth * math.tan(math.radians(angle))
 
     return x
+
+def absolute_depth(y1: float, y2: float) -> float:
+    y_top = min(y1, y2)
+    y_bottom = max(y1, y2)
+    depth = 0.0
+
+    if y_bottom > 0.99 and y_top < 0.01:
+        depth = 1.0
+
+    elif y_bottom > 0.99 and y_top > 0.0:
+        opposite = AVERAGE_HEIGHTS['person'] - CAMERA_HEIGHT
+        angle = CAMERA_FOV_Y * abs(0.5 - y_top)
+        depth = opposite / math.tan(math.radians(angle))
+
+    else:
+        angle = CAMERA_FOV_Y * abs(0.5 - y_bottom)
+        depth = CAMERA_HEIGHT / math.tan(math.radians(angle))
+        depth = 28438.52 * depth**0.00010355 - 28439.64
+
+    return depth
 
 def estimate_depth(y1: float, y2: float) -> float:
     """Estimates depth given the height of a bounding box and the camera parameters.
@@ -97,6 +117,12 @@ def estimate_depth(y1: float, y2: float) -> float:
 
     return depth
 
+def draw_text(x: float, y: float, text: str) -> None:
+    glColor3fv((0, 0, 0))
+    glWindowPos2f(x, y)
+    for char in text:
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord(char))
+
 def cube() -> None:
     """Adds a cube to the scene.
     """
@@ -127,19 +153,26 @@ def display() -> None:
     for result in results:
         for box in result.boxes.xyxyn:
             # Estimate the distance from the camera to the object.
-            depth = estimate_depth(box[1], box[3])
+            # depth = estimate_depth(box[1], box[3])
+            depth = -4 * absolute_depth(box[1], box[3])
             x = calculate_x(box[0], box[2], depth)
+            y = min(10 + depth, 5)
 
             glPushMatrix()
             glScalef(0.25, 0.25, 0.25)
-            glTranslatef(
-                x,
-                -0.5,
-                min(10 + depth, 5)
-            )
+            glTranslatef(x, -0.5, y)
             cube()
-            glPopMatrix()
 
+            modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
+            projection = glGetDoublev(GL_PROJECTION_MATRIX)
+            viewport = glGetIntegerv(GL_VIEWPORT)
+            x_2d, y_2d, z_2d = gluProject(0, 1, 0, modelview, projection, viewport)
+
+            abs_depth = absolute_depth(box[1], box[3])
+            draw_text(x_2d, y_2d, f'{abs_depth:.2f}m')
+            
+            glPopMatrix()
+            
     glutSwapBuffers()
 
 def update(value: int) -> None:
