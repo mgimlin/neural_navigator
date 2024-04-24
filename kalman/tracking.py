@@ -7,7 +7,7 @@ import numpy as np
 
 from ultralytics import YOLO
 
-from kalman import predict_next_position
+from kalman import predict_next_position, update_position
 
 
 
@@ -22,10 +22,14 @@ cap = cv2.VideoCapture(video_path)
 # Store the track history
 track_history = defaultdict(lambda: [])
 
+
+
 # Loop through the video frames
 while cap.isOpened():
     # Read a frame from the video
     success, frame = cap.read()
+
+    curr_tracks = defaultdict(lambda: ())
 
     if success:
         # Run YOLOv8 tracking on the frame, persisting tracks between frames
@@ -37,6 +41,66 @@ while cap.isOpened():
 
         # Visualize the results on the frame
         annotated_frame = results[0].plot()
+
+
+        for box, track_id in zip(boxes, track_ids):
+            x, y, w, h = box
+
+            track = track_history[track_id]
+            curr_track = curr_tracks[track_id]
+
+            # if (not track) or (len(track) == 1): #empty or only has 1 element
+            #     predicted = predict_next_position([(float(x), float(y))])
+            # else:
+            #     predicted = predict_next_position(track)
+            # print("ID:", track_id, "coordinates", float(x), float(y), "predicted", predicted)
+
+            curr_track = (float(x), float(y))  # x, y center point
+            # track.append((float(x), float(y)))  # x, y center point
+
+
+            
+
+
+        for track_id, coordinates_history in track_history.items():
+
+            track = track_history[track_id]
+            curr_track = curr_tracks[track_id]
+
+            if not track: # If track is empty but is showing up in track history, it was just detected for the first time
+                predicted = curr_tracks[track_id]
+
+            elif len(track) == 1: # 1 previous track
+                if not curr_track: # showed up once and vanished after a frame. will assume it was a ghost detection
+                    track_history.pop(track_id) # delete ghost from record
+                    continue
+                else: # detected. still using measured values only
+                    predicted = curr_tracks[track_id]
+                    
+            else: # with 2 or more points, we can now use kalman to predict
+
+                if not curr_track: # No detction for this object in the current frame. Either it has left the frame or it failed to pick up
+                    
+                    predicted = predict_next_position(track)
+                    # check if predicted coordinates are within frame. If it has left, use track_history.pop(track_id) and continue
+
+
+                else:
+                    predicted = predict_next_position(track)
+                    predicted = update_position(curr_track, predicted)
+
+
+
+            print("ID:", track_id, "coordinates", float(x), float(y), "predicted", predicted)
+
+            track.append(predicted)  # x, y center point
+
+
+            if len(track) > 30:  # retain 90 tracks for 90 frames
+                track.pop(0)
+             
+
+            
 
 
         # Plot the tracks
