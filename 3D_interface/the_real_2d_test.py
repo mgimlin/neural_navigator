@@ -32,65 +32,9 @@ CAMERA_FOV_X = 90
 CAMERA_FOV_Y = 50
 CAMERA_TILT = 0
 
-<<<<<<< HEAD
 # Globals for the window dimensions
 WIDTH = 800
 HEIGHT = 600
-=======
-deltaZ = 0.0
-
-running = True
-results = None
-models = {}
-
-# classDict = {
-#     0: person,        
-#     1: bike,       
-#     2: car,
-#     3: motorcycle,   
-#     4: bus,
-#     5: truck,
-#     6: stpsgn,    
-#     7: cat,
-#     8: dog,
-#     9: horse,
-#     10: sheep,
-#     11: cow,
-#     12: frisbee,
-#     13: ball,
-#     14: skateboard,
-#     15: trafficLight, 
-#     16: trafficLight,
-#     17: trafficLight,
-#     18: cube(),
-#     19: scooter,
-#     20: truck,
-#     21: cone,
-#     22: trash,
-#     23: car
-# } #15=gtl 16=rtl, 17=ytl
-model_files = {
-    # 'person': 'objs/person.obj',
-    # 'bike': 'objs/bike.obj',
-    # 'car': 'objs/car.obj',
-    # 'motorcycle': 'objs/motorcycle.obj',
-    # 'truck': 'objs/truck.obj',
-    # 'stopSign': 'objs/stopSign.obj',
-    # 'cat': 'objs/cat.obj',
-    'dog': 'objs/dog.obj',
-    # 'horse': 'objs/horse.obj',
-    # 'sheep': 'objs/sheep.obj',
-    # 'cow': 'objs/cow.obj',
-    # 'frisbee': 'objs/frisbee.obj',
-    # 'ball': 'objs/ball.obj',
-    # 'skateboard': 'objs/skateboard.obj',
-    # 'trafficLight': 'objs/trafficLight.obj',
-    # 'scooter': 'objs/scooter.obj',
-    # 'truck': 'objs/truck.obj',
-    # 'cone': 'objs/cone.obj',
-    # 'trash': 'objs/trash.obj'
-}
->>>>>>> 124436b8d39ebb870218a2f2f9a3bb088b3b01bd
 
 # Globals used for rending a cube.
 VERTICES = (
@@ -120,28 +64,10 @@ COLORS = (
     (0, 1, 1),
 )
 
-<<<<<<< HEAD
 def preload_models() -> None:
     """
     ?
     """
-=======
-# model = YOLO('../best.pt')
-# cam = cv2.VideoCapture(1)
-# if not cam.isOpened():
-#     exit()
-    
-# import torch
-
-# model_type = "MiDaS_small"
-# midas = torch.hub.load("intel-isl/MiDaS", model_type)
-# device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-# midas.to(device)
-# midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
-# transform = midas_transforms.small_transform
-
-def preload_models():
->>>>>>> 124436b8d39ebb870218a2f2f9a3bb088b3b01bd
     global models
     for key, file_path in model_files.items():
         try:
@@ -169,12 +95,7 @@ def draw_model(model_name: str) -> None:
     glColor3f(.75, 0.75, 0.75)
     
     for mesh in model.mesh_list:
-<<<<<<< HEAD
         for face in mesh.FACES:
-=======
-        glBegin(GL_TRIANGLES)
-        for face in mesh.faces:
->>>>>>> 124436b8d39ebb870218a2f2f9a3bb088b3b01bd
             for vertex_index in face:
                 glVertex3f(*model.VERTICES[vertex_index])        
         glEnd()
