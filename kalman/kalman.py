@@ -12,7 +12,7 @@ def update_position(measured_position, predicted_position):
         Returns:
             tuple: The new position of the object.
         """
-        error_threshold=10.0
+        error_threshold=500.0
         
         # if last_position is None:
         #     # This is the first measurement received.
@@ -26,6 +26,8 @@ def update_position(measured_position, predicted_position):
         else:
             # Calculate the error between the predicted and measured positions
             error = np.linalg.norm(predicted_position - np.array(measured_position))
+
+            print(error)
 
             if error > error_threshold:
                 # If error is too high, trust the prediction over the measurement
