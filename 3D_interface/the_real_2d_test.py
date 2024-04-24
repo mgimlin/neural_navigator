@@ -5,22 +5,22 @@ from OpenGL.GLU import *
 from ultralytics import YOLO
 import cv2
 
-import torch
+# import torch
 
-global running, results
 running = True
+results = None
 
 model = YOLO('../../yolo/gator_results/weights/best.pt')
 cam = cv2.VideoCapture(1)
 if not cam.isOpened():
     exit()
 
-model_type = "MiDaS_small"
-midas = torch.hub.load("intel-isl/MiDaS", model_type)
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-midas.to(device)
-midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
-transform = midas_transforms.small_transform
+# model_type = "MiDaS_small"
+# midas = torch.hub.load("intel-isl/MiDaS", model_type)
+# device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+# midas.to(device)
+# midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
+# transform = midas_transforms.small_transform
 
 # Window dimensions
 WIDTH = 800
@@ -155,6 +155,10 @@ def display() -> None:
 
     global results
     
+    if not results:
+        glutSwapBuffers()
+        return
+        
     for result in results:
         for box in result.boxes.xyxyn:
             # Estimate the distance from the camera to the object.
@@ -186,10 +190,12 @@ def update(value: int) -> None:
     glutPostRedisplay()
     glutTimerFunc(1000 // 60, update, 0)
     
-def yolo() -> None:
-    global results, running
+def yolo_thread() -> None:
+    global results
+    global running
     
-    while(running):
+    print('starting yolo thread')
+    while running:
         ret, frame = cam.read()
         if not ret:
             return
@@ -208,12 +214,14 @@ def main() -> None:
     glutTimerFunc(1000 // 60, update, 0)
     glEnable(GL_DEPTH_TEST)
     glutMainLoop()
+        
+import threading
+import sys
 
 if __name__ == "__main__":
     try:
-        threading.Thread(target=yolo, args=(), deamon=True).start()
+        threading.Thread(target=yolo_thread, args=(), daemon=True).start()
         main()
     except:
         running = False
-        
-import threading
+        sys.exit()
