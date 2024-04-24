@@ -7,6 +7,9 @@ import cv2
 
 import torch
 
+global running, results
+running = True
+
 model = YOLO('../../yolo/gator_results/weights/best.pt')
 cam = cv2.VideoCapture(1)
 if not cam.isOpened():
@@ -143,13 +146,15 @@ def display() -> None:
     glRotatef(45, 1, 0, 0)
 
     # Get a frame from the camera.
-    ret, frame = cam.read()
-    if not ret:
-        return
+    # ret, frame = cam.read()
+    # if not ret:
+    #     return
 
-    # Object detection.
-    results = model(frame)
+    # # Object detection.
+    # results = model(frame)
 
+    global results
+    
     for result in results:
         for box in result.boxes.xyxyn:
             # Estimate the distance from the camera to the object.
@@ -180,6 +185,16 @@ def update(value: int) -> None:
     """
     glutPostRedisplay()
     glutTimerFunc(1000 // 60, update, 0)
+    
+def yolo() -> None:
+    global results, running
+    
+    while(running):
+        ret, frame = cam.read()
+        if not ret:
+            return
+        
+        results = model(frame)
 
 def main() -> None:
     """
@@ -195,4 +210,10 @@ def main() -> None:
     glutMainLoop()
 
 if __name__ == "__main__":
-    main()
+    try:
+        threading.Thread(target=yolo, args=(), deamon=True).start()
+        main()
+    except:
+        running = False
+        
+import threading
