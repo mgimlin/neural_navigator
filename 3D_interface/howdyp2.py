@@ -44,11 +44,11 @@ classDict = {
     17: "YTL",
     18: "construction",
     19: "scooter",
-    20: "semi",
+    20: "truck",
     21: cone,
     22: "trash",
-    23: "van"
-    }
+    23: "car"
+}
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model = YOLO('best.pt').to(device)
 cam = cv2.VideoCapture(0) 
