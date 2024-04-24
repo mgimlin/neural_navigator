@@ -30,8 +30,52 @@ running = True
 results = None
 models = {}
 
+# classDict = {
+#     0: person,        
+#     1: bike,       
+#     2: car,
+#     3: motorcycle,   
+#     4: bus,
+#     5: truck,
+#     6: stpsgn,    
+#     7: cat,
+#     8: dog,
+#     9: horse,
+#     10: sheep,
+#     11: cow,
+#     12: frisbee,
+#     13: ball,
+#     14: skateboard,
+#     15: trafficLight, 
+#     16: trafficLight,
+#     17: trafficLight,
+#     18: cube(),
+#     19: scooter,
+#     20: truck,
+#     21: cone,
+#     22: trash,
+#     23: car
+# } #15=gtl 16=rtl, 17=ytl
 model_files = {
-    'person': 'objs/person.obj',
+    # 'person': 'objs/person.obj',
+    # 'bike': 'objs/bike.obj',
+    # 'car': 'objs/car.obj',
+    # 'motorcycle': 'objs/motorcycle.obj',
+    # 'truck': 'objs/truck.obj',
+    # 'stopSign': 'objs/stopSign.obj',
+    # 'cat': 'objs/cat.obj',
+    'dog': 'objs/dog.obj',
+    # 'horse': 'objs/horse.obj',
+    # 'sheep': 'objs/sheep.obj',
+    # 'cow': 'objs/cow.obj',
+    # 'frisbee': 'objs/frisbee.obj',
+    # 'ball': 'objs/ball.obj',
+    # 'skateboard': 'objs/skateboard.obj',
+    # 'trafficLight': 'objs/trafficLight.obj',
+    # 'scooter': 'objs/scooter.obj',
+    # 'truck': 'objs/truck.obj',
+    # 'cone': 'objs/cone.obj',
+    # 'trash': 'objs/trash.obj'
 }
 
 # Define vertices of the cube
@@ -58,10 +102,10 @@ colors = (
     (1, 1, 0), (1, 0, 1), (0, 1, 1)
 )
 
-model = YOLO('../best.pt')
-cam = cv2.VideoCapture(1)
-if not cam.isOpened():
-    exit()
+# model = YOLO('../best.pt')
+# cam = cv2.VideoCapture(1)
+# if not cam.isOpened():
+#     exit()
     
 # import torch
 
@@ -86,16 +130,18 @@ def draw_model(model_name):
         print(f"Model {model_name} not found")
         return
     
-    glScalef(0.75, 0.75, 0.75) 
-    glRotatef(0, 0, 0,  0)
+    glScalef(.02, .02, .02) 
+    # glRotatef(180, 1, 0, 0)
+    # glRotatef(90, 0, 1,  0)
+    # glRotatef(-20, 0, 0,  1)
     glTranslatef(0, -0.5, 2 - deltaZ)
     
     model = models[model_name]
     
     glColor3f(.75, 0.75, 0.75)
     
-    glBegin(GL_TRIANGLES)
     for mesh in model.mesh_list:
+        glBegin(GL_TRIANGLES)
         for face in mesh.faces:
             for vertex_index in face:
                 glVertex3f(*model.vertices[vertex_index])        
@@ -217,7 +263,7 @@ def display() -> None:
     # print("working")
     
     glPushMatrix()
-    draw_model('person')
+    draw_model('dog')
     
     modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
     projection = glGetDoublev(GL_PROJECTION_MATRIX)
@@ -248,7 +294,7 @@ def yolo_thread() -> None:
 def move_backwards():
     global deltaZ
     
-    for i in range(30):
+    for i in range(40):
         deltaZ += 1
         glutPostRedisplay()
         time.sleep(0.5)
