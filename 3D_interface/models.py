@@ -22,7 +22,7 @@ model_files = {
     'trash': 'objects/trash.obj'
 }
 
-def preload_models():
+def preload_models() -> dict:
     global model_files
     models = {}
     for key, file_path in model_files.items():
