@@ -286,13 +286,8 @@ def display() -> None:
             
             glPopMatrix()
     
-<<<<<<< HEAD
     # FIXME
     # what is this
-=======
-    glPushMatrix()
-    draw_model('dog')
->>>>>>> 124436b8d39ebb870218a2f2f9a3bb088b3b01bd
     
     # glPushMatrix()
     # draw_model('person')
@@ -307,6 +302,9 @@ def display() -> None:
 
 def update(value: int) -> None:
     """Refreshes the window.
+
+    Args:
+        value: idk
     """
     glutPostRedisplay()
     glutTimerFunc(1000 // 60, update, 0)
