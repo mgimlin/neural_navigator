@@ -1,3 +1,11 @@
 Person:
     glScalef(0.75, 0.75, 0.75) 
-    
+
+Motorcycle:
+    glScalef(.10, .10, .10) 
+
+Truck:
+    glScalef(.25, .25, .25) 
+
+Cat:
+    glScalef(.23, .23, .23)     
