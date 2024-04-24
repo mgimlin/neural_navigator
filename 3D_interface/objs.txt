@@ -1,1 +1,3 @@
 Person:
+    glScalef(0.75, 0.75, 0.75) 
+    

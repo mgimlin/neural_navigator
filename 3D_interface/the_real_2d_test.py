@@ -9,6 +9,7 @@ import math
 import pywavefront
 import threading
 import sys
+import time
 
 # Window dimensions
 WIDTH = 800
@@ -22,6 +23,8 @@ CAMERA_HEIGHT = 1
 CAMERA_FOV_X = 90
 CAMERA_FOV_Y = 50
 CAMERA_TILT = 0
+
+deltaZ = 0.0
 
 running = True
 results = None
@@ -78,13 +81,14 @@ def preload_models():
             print(f'{e}')
         
 def draw_model(model_name):
+    global deltaZ
     if model_name not in models:
         print(f"Model {model_name} not found")
         return
     
     glScalef(0.75, 0.75, 0.75) 
-    glRotatef(0, 0, 0)
-    glTranslatef(0, -0.5, 0)
+    glRotatef(0, 0, 0,  0)
+    glTranslatef(0, -0.5, 2 - deltaZ)
     
     model = models[model_name]
     
@@ -241,6 +245,15 @@ def yolo_thread() -> None:
         
         results = model(frame)
 
+def move_backwards():
+    global deltaZ
+    
+    for i in range(30):
+        deltaZ += 1
+        glutPostRedisplay()
+        time.sleep(0.5)
+        
+
 def main() -> None:
     """
     """
@@ -253,6 +266,7 @@ def main() -> None:
     glClearColor(1.0, 1.0, 1.0, 1.0)
     glutTimerFunc(1000 // 60, update, 0)
     glEnable(GL_DEPTH_TEST)
+    threading.Thread(target=move_backwards).start()
     glutMainLoop()
 
 if __name__ == "__main__":
