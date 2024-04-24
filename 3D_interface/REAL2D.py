@@ -3,25 +3,40 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from ultralytics import YOLO
 import cv2
-import torch
 import pywavefront
 
+running = True
+results = None
 
-model = YOLO('best.pt')
-cam = cv2.VideoCapture(0)
-if not cam.isOpened():
-    exit()
+vertices = (
+    (1, -1, -1), (1, 1, -1),
+    (-1, 1, -1), (-1, -1, -1),
+    (1, -1, 1), (1, 1, 1),
+    (-1, -1, 1), (-1, 1, 1)
+)
 
-model_type = "MiDaS_small"
-midas = torch.hub.load("intel-isl/MiDaS", model_type)
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-midas.to(device)
-midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
-transform = midas_transforms.small_transform
+# Define faces of the cube using vertices indices
+faces = (
+    (0, 1, 2, 3),
+    (3, 2, 7, 6),
+    (6, 7, 5, 4),
+    (4, 5, 1, 0),
+    (1, 5, 7, 2),
+    (4, 0, 3, 6)
+)
 
-# Window dimensions
-WIDTH = 800
-HEIGHT = 600
+# Define colors for each face
+colors = (
+    (1, 0, 0), (0, 1, 0), (0, 0, 1),
+    (1, 1, 0), (1, 0, 1), (0, 1, 1)
+)
+def cube():
+    glBegin(GL_QUADS)
+    for i, face in enumerate(faces):
+        glColor3fv(colors[i])  # Set color for each face
+        for vertex in face:
+            glVertex3fv(vertices[vertex])
+    glEnd()
 
 person = pywavefront.Wavefront('objects/BaseMesh.obj', collect_faces=True)
 car = pywavefront.Wavefront('objects/car.obj', collect_faces=True)
@@ -42,6 +57,58 @@ trash = pywavefront.Wavefront('objects/trash.obj', collect_faces=True)
 sheep = pywavefront.Wavefront('objects/sheep.obj', collect_faces=True)
 skateboard = pywavefront.Wavefront('objects/skateboard.obj', collect_faces=True)
 frisbee = pywavefront.Wavefront('objects/frisbee.obj', collect_faces=True)
+
+classDict = {
+    0: person,        
+    1: bike,       
+    2: car,
+    3: motorcycle,   
+    4: bus,
+    5: truck,
+    6: stpsgn,    
+    7: cat,
+    8: dog,
+    9: horse,
+    10: sheep,
+    11: cow,
+    12: frisbee,
+    13: ball,
+    14: skateboard,
+    15: "GTL", 
+    16: "RTL",
+    17: "YTL",
+    18: cube(),
+    19: scooter,
+    20: truck,
+    21: cone,
+    22: trash,
+    23: car
+    } #15=gtl 16=rtl, 17=ytl
+
+def RenderModel(obj):
+    # glPushMatrix()
+    # glScalef(*scene_scale)
+    # glTranslatef(*scene_trans)
+
+    glColor3f(0.75, 0.75, 0.75)  # Set the color to gray
+
+    for mesh in obj.mesh_list:
+        glBegin(GL_TRIANGLES)
+        for face in mesh.faces:
+            for vertex_i in face:
+                glVertex3f(*obj.vertices[vertex_i])
+        glEnd()
+
+
+model = YOLO('../../../NeuralNavigator/best.pt')
+cam = cv2.VideoCapture(0)
+if not cam.isOpened():
+    exit()
+
+
+# Window dimensions
+WIDTH = 800
+HEIGHT = 600
 
 # Define vertices of the cube
 vertices = (
@@ -152,51 +219,7 @@ def cube() -> None:
         for vertex in face:
             glVertex3fv(vertices[vertex])
     glEnd()
-    
-    
-classDict = {
-    0: person,        
-    1: bike,       
-    2: car,
-    3: motorcycle,   
-    4: bus,
-    5: truck,
-    6: stpsgn,    
-    7: cat,
-    8: dog,
-    9: horse,
-    10: sheep,
-    11: cow,
-    12: frisbee,
-    13: ball,
-    14: skateboard,
-    15: "GTL", 
-    16: "RTL",
-    17: "YTL",
-    18: cube,
-    19: scooter,
-    20: truck,
-    21: cone,
-    22: trash,
-    23: car
-    }
 
-
-def Model(obj):
-    # glPushMatrix()
-    # glScalef(*scene_scale)
-    # glTranslatef(*scene_trans)
-
-    glColor3f(0.75, 0.75, 0.75)  # Set the color to red
-
-    for mesh in obj.mesh_list:
-        glBegin(GL_TRIANGLES)
-        for face in mesh.faces:
-            for vertex_i in face:
-                glVertex3f(*obj.vertices[vertex_i])
-        glEnd()
-        
-        
 def display() -> None:
     """
     """
@@ -207,13 +230,19 @@ def display() -> None:
     glRotatef(45, 1, 0, 0)
 
     # Get a frame from the camera.
-    ret, frame = cam.read()
-    if not ret:
+    # ret, frame = cam.read()
+    # if not ret:
+    #     return
+
+    # # Object detection.
+    # results = model(frame)
+
+    global results
+    
+    if not results:
+        glutSwapBuffers()
         return
-
-    # Object detection.
-    results = model(frame)
-
+        
     for result in results:
         for i,box in enumerate(result.boxes.xyxyn):
             # Estimate the distance from the camera to the object.
@@ -223,11 +252,10 @@ def display() -> None:
             y = min(10 + depth, 5)
             cls = (result.boxes.cls)[i]
 
-
             glPushMatrix()
             glScalef(0.25, 0.25, 0.25)
             glTranslatef(x, -0.5, y)
-            Model(classDict[int(cls.item())])
+            RenderModel(classDict[int(cls.item())])
 
             modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
             projection = glGetDoublev(GL_PROJECTION_MATRIX)
@@ -246,6 +274,18 @@ def update(value: int) -> None:
     """
     glutPostRedisplay()
     glutTimerFunc(1000 // 60, update, 0)
+    
+def yolo_thread() -> None:
+    global results
+    global running
+    
+    print('starting yolo thread')
+    while running:
+        ret, frame = cam.read()
+        if not ret:
+            return
+        
+        results = model(frame)
 
 def main() -> None:
     """
@@ -259,6 +299,14 @@ def main() -> None:
     glutTimerFunc(1000 // 60, update, 0)
     glEnable(GL_DEPTH_TEST)
     glutMainLoop()
+        
+import threading
+import sys
 
 if __name__ == "__main__":
-    main()
+    try:
+        threading.Thread(target=yolo_thread, args=(), daemon=True).start()
+        main()
+    except:
+        running = False
+        sys.exit()
