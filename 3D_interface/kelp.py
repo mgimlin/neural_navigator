@@ -7,7 +7,7 @@ import pywavefront
 
 # Load the OBJ file (replace 'your_model.o
 # bj' with the actual filename)
-scene = pywavefront.Wavefront('objects/cone.obj', collect_faces=True)
+scene = pywavefront.Wavefront('ball.obj', collect_faces=True)
 #bike needs to be rotated 90 degrees along the x axis 
 #dog needs to be rotated
 #motorbike neds to be rotated
