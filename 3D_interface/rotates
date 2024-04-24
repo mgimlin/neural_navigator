@@ -1,0 +1,17 @@
+person: - 
+bus: side view: - front view : glRotate(90,0, -1, 0)
+trafficLight: glRotate(90,0, -1, 0)
+dog: glRotate(90,0, -1, 0), glRotate(90,-1, 0, 0)
+bike: glRotate(90,-1, 0, 0)
+car: side view: glRotate(90,0, -1, 0) front view : - 
+cone: - 
+cow: - 
+frisbee: glRotate(90,0, -1, 0), glRotate(90,-1, 0, 0)
+horse: glRotate(90,0, -1, 0)
+motorcycle: glRotate(90,0, -1, 0)
+scooter: - 
+sheep: glRotate(90,0, -1, 0)
+skateboard: glRotate(90,0, -1, 0)
+stopsign: glRotate(90,0, -1, 0)
+trash: - 
+truck : front view: -  side view: glRotate(90,0, -1, 0) 
