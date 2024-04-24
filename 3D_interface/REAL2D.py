@@ -1,14 +1,14 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-
 from ultralytics import YOLO
 import cv2
-
 import torch
+import pywavefront
+
 
 model = YOLO('best.pt')
-cam = cv2.VideoCapture(1)
+cam = cv2.VideoCapture(0)
 if not cam.isOpened():
     exit()
 
@@ -22,7 +22,6 @@ transform = midas_transforms.small_transform
 # Window dimensions
 WIDTH = 800
 HEIGHT = 600
-import pywavefront
 
 person = pywavefront.Wavefront('objects/BaseMesh.obj', collect_faces=True)
 car = pywavefront.Wavefront('objects/car.obj', collect_faces=True)
