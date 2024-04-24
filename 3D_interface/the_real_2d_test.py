@@ -3,28 +3,36 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 
 from ultralytics import YOLO
+
 import cv2
-
-# import torch
-
-running = True
-results = None
-
-model = YOLO('../../yolo/gator_results/weights/best.pt')
-cam = cv2.VideoCapture(1)
-if not cam.isOpened():
-    exit()
-
-# model_type = "MiDaS_small"
-# midas = torch.hub.load("intel-isl/MiDaS", model_type)
-# device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-# midas.to(device)
-# midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
-# transform = midas_transforms.small_transform
+import math
+import pywavefront
+import threading
+import sys
+import time
 
 # Window dimensions
 WIDTH = 800
 HEIGHT = 600
+
+AVERAGE_HEIGHTS = {
+    'person': 1.77,
+}
+
+CAMERA_HEIGHT = 1
+CAMERA_FOV_X = 90
+CAMERA_FOV_Y = 50
+CAMERA_TILT = 0
+
+deltaZ = 0.0
+
+running = True
+results = None
+models = {}
+
+model_files = {
+    'person': 'objs/person.obj',
+}
 
 # Define vertices of the cube
 vertices = (
@@ -50,17 +58,49 @@ colors = (
     (1, 1, 0), (1, 0, 1), (0, 1, 1)
 )
 
-import math
+model = YOLO('../best.pt')
+cam = cv2.VideoCapture(1)
+if not cam.isOpened():
+    exit()
+    
+# import torch
 
-AVERAGE_HEIGHTS = {
-    'person': 1.77,
-}
+# model_type = "MiDaS_small"
+# midas = torch.hub.load("intel-isl/MiDaS", model_type)
+# device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+# midas.to(device)
+# midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
+# transform = midas_transforms.small_transform
 
-CAMERA_HEIGHT = 1
-CAMERA_FOV_X = 90
-CAMERA_FOV_Y = 50
-CAMERA_TILT = 0
-
+def preload_models():
+    global models
+    for key, file_path in model_files.items():
+        try:
+            models[key] = pywavefront.Wavefront(file_path, collect_faces=True)
+        except Exception as e:
+            print(f'{e}')
+        
+def draw_model(model_name):
+    global deltaZ
+    if model_name not in models:
+        print(f"Model {model_name} not found")
+        return
+    
+    glScalef(0.75, 0.75, 0.75) 
+    glRotatef(0, 0, 0,  0)
+    glTranslatef(0, -0.5, 2 - deltaZ)
+    
+    model = models[model_name]
+    
+    glColor3f(.75, 0.75, 0.75)
+    
+    glBegin(GL_TRIANGLES)
+    for mesh in model.mesh_list:
+        for face in mesh.faces:
+            for vertex_index in face:
+                glVertex3f(*model.vertices[vertex_index])        
+        glEnd()
+    
 def calculate_x(x1: float, x2: float, depth: float) -> float:
     center_x = (x1 + x2) / 2
     angle = CAMERA_FOV_X * (0.5 - center_x)
@@ -145,42 +185,45 @@ def display() -> None:
     glTranslatef(0.0, -0.5, -5)
     glRotatef(45, 1, 0, 0)
 
-    # Get a frame from the camera.
-    # ret, frame = cam.read()
-    # if not ret:
-    #     return
-
-    # # Object detection.
-    # results = model(frame)
-
     global results
     
-    if not results:
-        glutSwapBuffers()
-        return
-        
-    for result in results:
-        for box in result.boxes.xyxyn:
-            # Estimate the distance from the camera to the object.
-            # depth = estimate_depth(box[1], box[3])
-            depth = -4 * absolute_depth(box[1], box[3])
-            x = calculate_x(box[0], box[2], depth)
-            y = min(10 + depth, 5)
+    # if not results:
+    #     glutSwapBuffers()
+    #     return
 
-            glPushMatrix()
-            glScalef(0.25, 0.25, 0.25)
-            glTranslatef(x, -0.5, y)
-            cube()
+    # for result in results:
+    #     for box in result.boxes.xyxyn:
+    #         # Estimate the distance from the camera to the object.
+    #         # depth = estimate_depth(box[1], box[3])
+    #         # depth = -4 * absolute_depth(box[1], box[3])
+    #         # x = calculate_x(box[0], box[2], depth)
+    #         # y = min(10 + depth, 5)
 
-            modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
-            projection = glGetDoublev(GL_PROJECTION_MATRIX)
-            viewport = glGetIntegerv(GL_VIEWPORT)
-            x_2d, y_2d, z_2d = gluProject(0, 1, 0, modelview, projection, viewport)
+    #         glPushMatrix()
+    #         glScalef(0.25, 0.25, 0.25)
+    #         glTranslatef(10, -0.5, 10)
+    #         cube()
 
-            abs_depth = absolute_depth(box[1], box[3])
-            draw_text(x_2d, y_2d, f'{abs_depth:.2f}m')
+    #         modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
+    #         projection = glGetDoublev(GL_PROJECTION_MATRIX)
+    #         viewport = glGetIntegerv(GL_VIEWPORT)
+    #         x_2d, y_2d, z_2d = gluProject(0, 1, 0, modelview, projection, viewport)
+
+    #         # abs_depth = absolute_depth(box[1], box[3])
+    #         # draw_text(x_2d, y_2d, f'{abs_depth:.2f}m')
             
-            glPopMatrix()
+    #         glPopMatrix()
+    
+    # print("working")
+    
+    glPushMatrix()
+    draw_model('person')
+    
+    modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
+    projection = glGetDoublev(GL_PROJECTION_MATRIX)
+    viewport = glGetIntegerv(GL_VIEWPORT)
+    gluProject(0, 1, 0, modelview, projection, viewport)
+    glPopMatrix()
             
     glutSwapBuffers()
 
@@ -202,9 +245,19 @@ def yolo_thread() -> None:
         
         results = model(frame)
 
+def move_backwards():
+    global deltaZ
+    
+    for i in range(30):
+        deltaZ += 1
+        glutPostRedisplay()
+        time.sleep(0.5)
+        
+
 def main() -> None:
     """
     """
+    preload_models()
     glutInit()
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
     glutInitWindowSize(WIDTH, HEIGHT)
@@ -213,14 +266,12 @@ def main() -> None:
     glClearColor(1.0, 1.0, 1.0, 1.0)
     glutTimerFunc(1000 // 60, update, 0)
     glEnable(GL_DEPTH_TEST)
+    threading.Thread(target=move_backwards).start()
     glutMainLoop()
-        
-import threading
-import sys
 
 if __name__ == "__main__":
     try:
-        threading.Thread(target=yolo_thread, args=(), daemon=True).start()
+        # threading.Thread(target=yolo_thread, args=(), daemon=True).start()
         main()
     except:
         running = False

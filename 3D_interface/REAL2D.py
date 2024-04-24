@@ -83,7 +83,7 @@ classDict = {
     21: cone,
     22: trash,
     23: car
-    } #15=gtl 16=rtl, 17=ytl
+} #15=gtl 16=rtl, 17=ytl
 
 def RenderModel(obj):
     # glPushMatrix()
