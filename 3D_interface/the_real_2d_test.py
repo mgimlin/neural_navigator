@@ -8,7 +8,7 @@ import cv2
 import torch
 
 model = YOLO('../../yolo/gator_results/weights/best.pt')
-cam = cv2.VideoCapture(0)
+cam = cv2.VideoCapture(1)
 if not cam.isOpened():
     exit()
 
@@ -58,6 +58,13 @@ CAMERA_FOV_X = 90
 CAMERA_FOV_Y = 50
 CAMERA_TILT = 0
 
+def calculate_x(x1: float, x2: float, depth: float) -> float:
+    center_x = (x1 + x2) / 2
+    angle = CAMERA_FOV_X * (0.5 - center_x)
+    x = depth * math.tan(math.radians(angle))
+
+    return x
+
 def estimate_depth(y1: float, y2: float) -> float:
     """Estimates depth given the height of a bounding box and the camera parameters.
 
@@ -73,18 +80,20 @@ def estimate_depth(y1: float, y2: float) -> float:
     depth = 0.0
 
     if y_bottom > 0.99 and y_top < 0.01:
-        depth = -1.0
+        depth = 10.0
 
     elif y_bottom > 0.99 and y_top > 0.0:
         opposite = AVERAGE_HEIGHTS['person'] - CAMERA_HEIGHT
         angle = CAMERA_FOV_Y * abs(0.5 - y_top)
         depth = opposite / math.tan(math.radians(angle))
-        depth *= -depth
+        # depth *= -depth
+        depth /= 2
 
     else:
         angle = CAMERA_FOV_Y * abs(0.5 - y_bottom)
         depth = CAMERA_HEIGHT / math.tan(math.radians(angle))
-        depth *= -depth
+        # depth *= -(depth / 4)
+        depth *= -1
 
     return depth
 
@@ -119,17 +128,14 @@ def display() -> None:
         for box in result.boxes.xyxyn:
             # Estimate the distance from the camera to the object.
             depth = estimate_depth(box[1], box[3])
-
-            # Scale the x position depending on the depth.
-            center_x = (box[0] + box[2]) / 2
-            angle = CAMERA_FOV_X * abs(0.5 - center_x)
+            x = calculate_x(box[0], box[2], depth)
 
             glPushMatrix()
             glScalef(0.25, 0.25, 0.25)
             glTranslatef(
-                depth * math.tan(math.radians(angle)),
+                x,
                 -0.5,
-                10 + depth
+                min(10 + depth, 5)
             )
             cube()
             glPopMatrix()
