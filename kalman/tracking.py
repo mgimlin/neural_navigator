@@ -25,6 +25,7 @@ cap = cv2.VideoCapture(0)
 track_history = defaultdict(lambda: [])
 vanish_count = defaultdict(lambda: 0)
 ghost = defaultdict(lambda: True)
+vanish = defaultdict(lambda: False)
 
 
 
@@ -90,9 +91,9 @@ while cap.isOpened():
             elif len(track) < 18: # not enough to interpolate
                 if not curr_track: # showed up once and vanished after a few frames. will assume it was a ghost detection
                     # track_history.pop(track_id) # delete ghost from record
-                    print("HERE2")
-                    track = []
-                    vanish_count[track_id] = -1
+                    # print("HERE2")
+                    # track = []
+                    # vanish_count[track_id] = -1
 
                     continue
                 else: # detected. still using measured values only
@@ -100,9 +101,10 @@ while cap.isOpened():
 
             elif len(track) >= 18: # enough to interpolate
                 if not curr_track:
-                    print("GONE")
+                    # print("GONE")
                     vanish_count[track_id] += 1
                     if vanish_count[track_id] > 5:
+                        vanish[track_id]
                         continue
                     predicted = predict_next_position(track)
                 else:
@@ -153,6 +155,10 @@ while cap.isOpened():
             # Draw the tracking lines
             points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
             cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
+
+        for status in vanish.values():
+            if not status:
+                track_history
 
              
 
