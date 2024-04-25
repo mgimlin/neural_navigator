@@ -25,7 +25,7 @@ def update_position(measured_position, predicted_position):
             new_position = predicted_position
         else:
             # Calculate the error between the predicted and measured positions
-            error = np.linalg.norm(predicted_position - np.array(measured_position))
+            error = np.linalg.norm(np.array(predicted_position) - np.array(measured_position))
 
             print(error)
 
@@ -39,7 +39,7 @@ def update_position(measured_position, predicted_position):
 
         # Update the last known position
         # last_position = new_position
-        return tuple(new_position)
+        return new_position
 
 
 def state_transition_function(state, noise):
