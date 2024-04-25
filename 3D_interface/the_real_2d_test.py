@@ -274,18 +274,20 @@ def display() -> None:
                 if not curr_track:
                     print("GONE")
                     vanish_count[track_id] += 1
-                    if vanish_count[track_id] > 10: # if gone for 10 frames add to delete list
+                    if vanish_count[track_id] > 20: # if gone for 10 frames add to delete list
                         vanish_ids.append(track_id) 
                         continue
-                    predicted = predict_next_position(track) #midpoint
-                    midpoint = predicted
 
-                    x_shifted_left = midpoint[0] - w/2
-                    y_shifted_upper = midpoint[1] - h/2
-                    x_shifted_right = midpoint[0] + w/2
-                    y_shifted_lower = midpoint[1] + h/2
+                    predicted = prev_pos
+                    # predicted = predict_next_position(track) #midpoint
+                    # midpoint = predicted
 
-                    predicted = [ x_shifted_left, y_shifted_upper, x_shifted_right, y_shifted_lower ]
+                    # x_shifted_left = midpoint[0] - w/2
+                    # y_shifted_upper = midpoint[1] - h/2
+                    # x_shifted_right = midpoint[0] + w/2
+                    # y_shifted_lower = midpoint[1] + h/2
+
+                    # predicted = [ x_shifted_left, y_shifted_upper, x_shifted_right, y_shifted_lower ]
 
 
 
@@ -323,6 +325,7 @@ def display() -> None:
 
             # print("ID:", track_id, "coordinates", curr_track, "predicted", predicted)
 
+            prev_pos[track_id] = curr_track
             track.append(midpoint)  # x, y center point
             
             #########
@@ -478,6 +481,9 @@ def yolo_thread() -> None:
 
     global classes_
     classes_ = defaultdict(lambda: -1)
+
+    global prev_pos
+    prev_pos = defaultdict(lambda: [])
 
     
     print('starting yolo thread')
