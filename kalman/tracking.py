@@ -61,9 +61,7 @@ while cap.isOpened():
             x, y, w, h = box
 
             track = track_history[track_id] # default dict creates empty list at this key
-
-
-            curr_track = curr_tracks[track_id]
+            # curr_track = curr_tracks[track_id]
             
 
             # if (not track) or (len(track) == 1): #empty or only has 1 element
