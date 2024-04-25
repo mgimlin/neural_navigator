@@ -8,6 +8,7 @@ import pywavefront
 import threading
 import sys
 import time
+import models
 
 model = None # YOLOv8 global.
 cam = None # Webcam global.
@@ -23,24 +24,40 @@ velocities = {}
 deltaZ = 0.0 # ?
 
 # obj file stuff?
-models = {}
+# models = {}
 model_files = {
     'person': 'objs/person.obj',
 }
 
 # Globals constants for the depth estimation.
 AVERAGE_HEIGHTS = {
-    'person': 1.77,
-    'car': 1.8,
-    'truck': 3.9624,
-    'bus': 3.9624,
-    'bike': 1.05,
-    'motorcycle': 1.05,
-    'scooter': 1.05,
-    'cone': 0.28,
-    'trafficLight': 1.2192,
+    0: 1.77,
+    1: 1.05,
+    2: 1.8,
+    3: 1.05,
+    4: 3.9624,
+    5: 3.9624,
+    6: 2.1336,
+    7:  0.5,
+    8:  0.6,
+    9:  2.1,
+    10: 1.0,
+    11: 1.0,
+    12: 0.05,
+    13: 0.1,
+    14: 0.1,
+    15: 1.2192,
+    16: 1.2192,
+    17: 1.2192,
+    18: 0.9,
+    19: 1.05,
+    20: 3.9624,
+    21: 0.28,
+    22: 1.1176,
+    23: 1.1176,
+
 }
-CAMERA_HEIGHT = 1
+CAMERA_HEIGHT = 0.99
 CAMERA_FOV_X = 90
 CAMERA_FOV_Y = 50
 CAMERA_TILT = 0
@@ -77,41 +94,41 @@ COLORS = (
     (0, 1, 1),
 )
 
-def preload_models() -> None:
-    """
-    ?
-    """
-    global models
-    for key, file_path in model_files.items():
-        try:
-            models[key] = pywavefront.Wavefront(file_path, collect_FACES=True)
-        except Exception as e:
-            print(f'{e}')
+# def preload_models() -> None:
+#     """
+#     ?
+#     """
+#     global models
+#     for key, file_path in model_files.items():
+#         try:
+#             models[key] = pywavefront.Wavefront(file_path, collect_FACES=True)
+#         except Exception as e:
+#             print(f'{e}')
         
-def draw_model(model_name: str) -> None:
-    """
-    ?
-    """
-    global deltaZ
-    if model_name not in models:
-        print(f"Model {model_name} not found")
-        return
+# def draw_model(model_name: str) -> None:
+#     """
+#     ?
+#     """
+#     global deltaZ
+#     if model_name not in models:
+#         print(f"Model {model_name} not found")
+#         return
     
-    glScalef(.02, .02, .02) 
-    # glRotatef(180, 1, 0, 0)
-    # glRotatef(90, 0, 1,  0)
-    # glRotatef(-20, 0, 0,  1)
-    glTranslatef(0, -0.5, 2 - deltaZ)
+#     glScalef(.02, .02, .02) 
+#     # glRotatef(180, 1, 0, 0)
+#     # glRotatef(90, 0, 1,  0)
+#     # glRotatef(-20, 0, 0,  1)
+#     glTranslatef(0, -0.5, 2 - deltaZ)
     
-    model = models[model_name]
+#     model = models[model_name]
     
-    glColor3f(.75, 0.75, 0.75)
+#     glColor3f(.75, 0.75, 0.75)
     
-    for mesh in model.mesh_list:
-        for face in mesh.FACES:
-            for vertex_index in face:
-                glVertex3f(*model.VERTICES[vertex_index])        
-        glEnd()
+#     for mesh in model.mesh_list:
+#         for face in mesh.FACES:
+#             for vertex_index in face:
+#                 glVertex3f(*model.VERTICES[vertex_index])        
+#         glEnd()
     
 def estimate_x(x1: float, x2: float, depth: float) -> float:
     """Estimates the x value of a position.
@@ -128,7 +145,7 @@ def estimate_x(x1: float, x2: float, depth: float) -> float:
     angle = CAMERA_FOV_X * (0.5 - center_x)
     return depth * math.tan(math.radians(angle))
 
-def estimate_depth(y1: float, y2: float) -> float:
+def estimate_depth(cls: int, y1: float, y2: float) -> float:
     """Estimates depth given the height of a bounding box and the camera parameters.
 
     Args:
@@ -147,11 +164,11 @@ def estimate_depth(y1: float, y2: float) -> float:
 
     # The object is cut off by the bottom of the frame.
     elif y_bottom > 0.99 and y_top > 0.0:
-        opposite = AVERAGE_HEIGHTS['person'] - CAMERA_HEIGHT
+        opposite = AVERAGE_HEIGHTS[cls] - CAMERA_HEIGHT
         angle = CAMERA_FOV_Y * abs(0.5 - y_top)
         return opposite / math.tan(math.radians(angle))
 
-    # The object is fully in the frame.
+    # The object is fully in the frame. 
     else:
         angle = CAMERA_FOV_Y * abs(0.5 - y_bottom)
         depth = CAMERA_HEIGHT / math.tan(math.radians(angle))
@@ -209,8 +226,10 @@ def display() -> None:
         if result.boxes.id == None:
             break
         track_ids = result.boxes.id.int().cpu().tolist()
-        for box, track_id in zip(boxes, track_ids):
-            abs_depth = estimate_depth(box[1], box[3]) # The actual estimated depth.
+        classes = result.boxes.cls
+        for box, track_id, cls in zip(boxes, track_ids, classes):
+            cls = int(cls.item())
+            abs_depth = estimate_depth(cls, box[1], box[3]) # The actual estimated depth.
             abs_x = estimate_x(box[0], box[2], abs_depth)
             abs_y = abs_depth
 
@@ -242,9 +261,10 @@ def display() -> None:
 
             # Place the object in the environment.
             glPushMatrix()
-            glScalef(0.25, 0.25, 0.25)
-            glTranslatef(ui_x, -0.5, ui_y)
-            cube()
+            models.draw_model(cls, ui_x, ui_y)
+            # glScalef(0.25, 0.25, 0.25)
+            # glTranslatef(ui_x, -0.5, ui_y)
+            # cube()
 
             # Display text above the object.
             modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
@@ -252,7 +272,7 @@ def display() -> None:
             viewport = glGetIntegerv(GL_VIEWPORT)
             x_2d, y_2d, z_2d = gluProject(0, 1, 0, modelview, projection, viewport)
             draw_text(x_2d, y_2d, f'{abs_depth:.2f}m {smooth_vel:.2f} m/s')
-            
+            print("here")
             glPopMatrix()
 
             if not track_id in last_positions or new_frame:
@@ -325,6 +345,8 @@ def main() -> None:
     global model
     global cam
     global running
+    models.preload_models()
+
 
     # Set up YOLOv8.
     model = YOLO('../best.pt')
@@ -337,7 +359,7 @@ def main() -> None:
     # Launch the YOLOv8 thread.
     threading.Thread(target=yolo_thread, args=(), daemon=True).start()
     
-    preload_models()
+    # preload_models()
     
     # Setup OpenGL and run the display loop.
     glutInit()
@@ -354,6 +376,7 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except:
+    except Exception as e:
+        print(e)
         running = False
         sys.exit()

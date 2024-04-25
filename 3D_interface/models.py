@@ -50,20 +50,22 @@ objs = {
     15: OBJ(15, 'Green Traffic Light', (0.30378719342555904, 0.30378719342555904, 0.30378719342555904), (90, 0, -1, 0), 'objects/trafficLight.obj'),
     16: OBJ(16, 'Red Traffic Light', (0.30378719342555904, 0.30378719342555904, 0.30378719342555904), (90, 0, -1, 0), 'objects/trafficLight.obj'),
     17: OBJ(17, 'Yellow Traffic Light', (0.30378719342555904, 0.30378719342555904, 0.30378719342555904), (90, 0, -1, 0), 'objects/trafficLight.obj'),
+    18: OBJ(21, 'Construction', (1.0195531911476563, 1.0195531911476563, 1.0195531911476563), (0, 0, 0, 0), 'objects/cone.obj'),
     19: OBJ(19, 'Scooter', (0.5227721645987892, 0.5227721645987892, 0.5227721645987892), (0, 0, 0, 0), 'objects/scooter.obj'),
     21: OBJ(21, 'Cone', (1.0195531911476563, 1.0195531911476563, 1.0195531911476563), (0, 0, 0, 0), 'objects/cone.obj'),
     22: OBJ(22, 'Trash', (0.02237857385824516, 0.02237857385824516, 0.02237857385824516), (0, 0, 0, 0), 'objects/trash.obj'),
+    22: OBJ(23, 'van', (0.02237857385824516, 0.02237857385824516, 0.02237857385824516), (0, 0, 0, 0), 'objects/car.obj'),
 }
 
 def preload_models() -> None:
     for obj in objs.values():
         obj.preload_model()
 
-def draw_model(object_id: int, z: int) -> None:
+def draw_model(object_id: int, x: float, y: float) -> None:
     obj = objs.get(object_id)
 
     obj.apply_scale()
-    glTranslatef(0, -0.5, z*obj.get_scale_factor())
+    glTranslatef(x, -0.5, y*obj.get_scale_factor())
     obj.apply_rotation()
 
     
