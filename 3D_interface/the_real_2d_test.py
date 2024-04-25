@@ -15,8 +15,10 @@ cam = None # Webcam global.
 running = True # The flag to stop the YOLOv8 thread.
 results = None # YOLOv8 results global.
 
-last_depths = {}
-current_depths = {}
+last_time = 0.0
+last_positions = {}
+new_frame = False
+velocities = {}
 
 deltaZ = 0.0 # ?
 
@@ -177,8 +179,12 @@ def display() -> None:
     the environment.
     """
     global results
-    global last_depths
-    global current_depths
+    global last_time
+    global last_positions
+    global new_frame
+    global velocities
+
+    current_time = time.time()
     
     if not results:
         glutSwapBuffers()
@@ -191,10 +197,11 @@ def display() -> None:
     glRotatef(45, 1, 0, 0)
 
     for result in results:
-        # boxes = result.boxes.xyxyn
-        # track_ids = result.boxes.id.int().cpu().tolist()
-        # for box, track_id in zip(boxes, track_ids):
-        for box in result.boxes.xyxyn:
+        boxes = result.boxes.xyxyn
+        if result.boxes.id == None:
+            break
+        track_ids = result.boxes.id.int().cpu().tolist()
+        for box, track_id in zip(boxes, track_ids):
             abs_depth = estimate_depth(box[1], box[3]) # The actual estimated depth.
             abs_x = estimate_x(box[0], box[2], abs_depth)
             abs_y = abs_depth
@@ -203,7 +210,22 @@ def display() -> None:
             ui_x = estimate_x(box[0], box[2], ui_depth)
             ui_y = min(10 + ui_depth, 5)
 
-            # current_depths[track_id] = abs_depth
+            if not track_id in velocities or new_frame:
+                depth_change = 0.0
+                velocity = 0.0
+                if track_id in last_positions:
+                    vel_x = abs(abs_x - last_positions[track_id][0]) / \
+                        (current_time - last_time)
+                    vel_y = abs(abs_y - last_positions[track_id][1]) / \
+                        (current_time - last_time)
+                    velocity = math.sqrt(vel_x**2 + vel_y**2)
+                    
+                    change_x = abs(abs_x - last_positions[track_id][0])
+                    change_y = abs(abs_y - last_positions[track_id][1])
+                    depth_change = math.sqrt(change_x**2 + change_y**2)
+                    print(track_id, depth_change, velocity, new_frame)
+
+                velocities[track_id] = velocity
             
             # Place the object in the environment.
             glPushMatrix()
@@ -216,11 +238,15 @@ def display() -> None:
             projection = glGetDoublev(GL_PROJECTION_MATRIX)
             viewport = glGetIntegerv(GL_VIEWPORT)
             x_2d, y_2d, z_2d = gluProject(0, 1, 0, modelview, projection, viewport)
-            draw_text(x_2d, y_2d, f'{actual_depth:.2f}m')
+            draw_text(x_2d, y_2d, f'{abs_depth:.2f}m {velocities[track_id]:.2f} m/s')
             
             glPopMatrix()
 
-            # last_depths[track_id] = current_depths[track_id]
+            if not track_id in last_positions or new_frame:
+                last_positions[track_id] = (abs_x, abs_y)
+
+    last_time = current_time
+    new_frame = False
     
     # FIXME
     # what is this
@@ -253,6 +279,7 @@ def yolo_thread() -> None:
     global running
     global model
     global cam
+    global new_frame
     
     print('starting yolo thread')
     while running:
@@ -264,6 +291,7 @@ def yolo_thread() -> None:
             return
         
         results = model.track(frame)
+        new_frame = True
 
 def move_backwards() -> None:
     """
@@ -289,7 +317,7 @@ def main() -> None:
     model = YOLO('../best.pt')
 
     # Set up the webcam.
-    cam = cv2.VideoCapture(1)
+    cam = cv2.VideoCapture(0)
     if not cam.isOpened():
         return
     
