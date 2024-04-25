@@ -20,19 +20,15 @@ def display() -> None:
     global DELTA_Z
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
+    gluPerspective(90, WIDTH / HEIGHT, 0.1, 50.0)
     
-    glScalef(0.25, 0.25, 0.25)
-    glTranslatef(0.0, -0.5, 0)
+    glTranslatef(0.0, -0.5, -5)
     glRotatef(45, 1, 0, 0)
     
     glPushMatrix()
-    z = 0 - DELTA_Z
-    print(z)
     # glTranslate(0, 0, z)
-    models.draw_model(0, z)
-
+    models.draw_model(10, 2 - DELTA_Z)
     glPopMatrix()
-    time.sleep(1)
             
     glutSwapBuffers()
 
@@ -51,7 +47,7 @@ def move_backwards():
     for i in range(40):
         DELTA_Z += 1
         glutPostRedisplay()
-        time.sleep(1)
+        time.sleep(.5)
 
 def main() -> None:
     # Setup OpenGL and run the display loop.
@@ -63,7 +59,6 @@ def main() -> None:
     glutCreateWindow("3D Interface")
     glutDisplayFunc(display)
     glutTimerFunc(1000 // 60, update, 0)
-    gluPerspective(90, WIDTH / HEIGHT, 0.1, 50.0)
     glClearColor(1.0, 1.0, 1.0, 1.0)
     glEnable(GL_DEPTH_TEST)
     threading.Thread(target=move_backwards).start()

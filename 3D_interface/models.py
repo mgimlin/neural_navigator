@@ -24,6 +24,9 @@ class OBJ:
         
     def apply_rotation(self):
         glRotatef(*self.rotation)
+        
+    def get_scale_factor(self):
+        return 1.0 / self.scale[2]
             
     def get_model(self):
         return self.model
@@ -39,7 +42,7 @@ objs = {
     7: OBJ(7, 'Cat', (0.2839997629169979, 0.2839997629169979, 0.2839997629169979), (0, 0, 0, 0), 'objects/cat.obj'),
     8: OBJ(8, 'Dog', (0.023733508771430174, 0.023733508771430174, 0.023733508771430174), (0, 0, 0, 0), 'objects/dog.obj'),
     9: OBJ(9, 'Horse', (0.4578585187874002, 0.4578585187874002, 0.4578585187874002), (90, 0, -1, 0), 'objects/Horse.obj'),
-    10: OBJ(10, 'Sheep', (0.0008176112303370176, 0.0008176112303370176, 0.0008176112303370176), (90, 0, -1, 0), 'objects/sheep.obj'),
+    10: OBJ(10, 'Sheep', (0.8135220379052459, 0.8135220379052459, 0.8135220379052459), (90, 0, -1, 0), 'objects/sheep.obj'),
     11: OBJ(11, 'Cow', (0.0008176112303370176, 0.0008176112303370176, 0.0008176112303370176), (0, 0, 0, 0), 'objects/cow.obj'),
     12: OBJ(12, 'Frisbee', (0.021554883043204607, 0.021554883043204607, 0.021554883043204607), (0, 0, 0, 0), 'objects/frisbee.obj'),
     13: OBJ(13, 'Ball', (0.0025252525252525255, 0.0025252525252525255, 0.0025252525252525255), (0, 0, 0, 0), 'objects/ball.obj'),
@@ -58,9 +61,11 @@ def preload_models() -> None:
 
 def draw_model(object_id: int, z: int) -> None:
     obj = objs.get(object_id)
+
     obj.apply_scale()
+    glTranslatef(0, -0.5, z*obj.get_scale_factor())
     obj.apply_rotation()
-    glTranslatef(0, 0, z)
+
     
     model = obj.get_model()
     
