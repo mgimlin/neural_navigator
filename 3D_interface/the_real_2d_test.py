@@ -295,11 +295,13 @@ def display() -> None:
 
                     predicted = update_position(measured, predicted)
 
-                    
+            w = abs(predicted[2] - predicted[0])
+            h = abs(predicted[3] - predicted[1])
+            midpoint = ( (predicted[0] + predicted[2])/2, (predicted[1] + predicted[3])/2 )
 
             print("ID:", track_id, "coordinates", curr_track, "predicted", predicted)
 
-            track.append(predicted)  # x, y center point
+            track.append(midpoint)  # x, y center point
             
             #########
 
