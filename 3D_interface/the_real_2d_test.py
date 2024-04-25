@@ -10,6 +10,9 @@ import sys
 import time
 import models
 
+from collections import defaultdict
+from kalman import predict_next_position, update_position
+
 model = None # YOLOv8 global.
 cam = None # Webcam global.
 
@@ -221,14 +224,86 @@ def display() -> None:
     glTranslatef(0.0, -0.5, -5)
     glRotatef(45, 1, 0, 0)
 
+    vanish_ids = []
+    curr_tracks = defaultdict(lambda: [])
+
     for result in results:
         boxes = result.boxes.xyxyn
         if result.boxes.id == None:
             break
         track_ids = result.boxes.id.int().cpu().tolist()
         classes = result.boxes.cls
+
+
+        # Get all detections for the current frame
         for box, track_id, cls in zip(boxes, track_ids, classes):
-            cls = int(cls.item())
+            x, y, x_, y_, n = box
+            track = track_history[track_id] # default dict creates empty list at this key
+            curr_tracks[track_id] = [float(x), float(y), float(x_), float(y_)]  # top left, bottom right
+            classes_[track_id] = cls
+
+
+        # go through all recorded detections and update accordingly
+        for track_id in track_history.keys():
+            track = track_history[track_id]
+            curr_track = curr_tracks[track_id]
+
+            # If track is empty but is showing up in track history dict, it was just detected for the first time
+            if not track:
+                if not curr_track:
+                    print("SHOULD NOT BE HERE")
+                    exit(-1)
+
+                # otherwise first detection
+                predicted = curr_track
+
+            elif len(track) < 18: # not enough to interpolate
+                if not curr_track: # showed up once and vanished after a few frames. will assume it was a ghost detection
+                    # print("GHOST")
+                    vanish_ids.append(track_id) # add to delete list
+                    continue
+                else: # detected. still using measured values only
+                    predicted = curr_track
+
+            elif len(track) >= 18: # enough to interpolate
+                if not curr_track:
+                    # print("GONE")
+                    vanish_count[track_id] += 1
+                    if vanish_count[track_id] > 10: # if gone for 10 frames add to delete list
+                        vanish_ids.append(track_id) 
+                        continue
+                    predicted = predict_next_position(track)                   
+
+
+                else:
+                    print("NO VANISH, CHECK ERROR")
+
+                    predicted = predict_next_position(track)
+
+                    w = abs(curr_track[2] - curr_track[0])
+                    h = abs(curr_track[3] - curr_track[1])
+                    midpoint = ( (curr_track[0] + curr_track[2])/2, (curr_track[1] + curr_track[3])/2 )
+   
+                    x_shifted_left = midpoint - w/2
+                    y_shifted_upper = midpoint - h/2
+                    x_shifted_right = midpoint + w/2
+                    y_shifted_lower = midpoint + h/2
+
+                    measured = [ x_shifted_left, y_shifted_upper, x_shifted_right, y_shifted_lower ]
+
+                    predicted = update_position(measured, predicted)
+
+                    
+
+            print("ID:", track_id, "coordinates", curr_track, "predicted", predicted)
+
+            track.append(predicted)  # x, y center point
+            
+            #########
+
+            box = predicted
+            cls = classes_[track_id]
+
             abs_depth = estimate_depth(cls, box[1], box[3]) # The actual estimated depth.
             abs_x = estimate_x(box[0], box[2], abs_depth)
             abs_y = abs_depth
@@ -278,6 +353,59 @@ def display() -> None:
             if not track_id in last_positions or new_frame:
                 last_positions[track_id] = (abs_x, abs_y)
 
+
+
+        # for box, track_id, cls in zip(boxes, track_ids, classes):
+        #     cls = int(cls.item())
+        #     abs_depth = estimate_depth(cls, box[1], box[3]) # The actual estimated depth.
+        #     abs_x = estimate_x(box[0], box[2], abs_depth)
+        #     abs_y = abs_depth
+
+        #     ui_depth = -4 * abs_depth # The exaggerated depth for the UI.
+        #     ui_x = estimate_x(box[0], box[2], ui_depth)
+        #     ui_y = min(10 + ui_depth, 5)
+
+        #     if not track_id in velocities:
+        #         velocities[track_id] = [0.0, 0.0, 0.0, 0.0]
+
+        #     if not track_id in velocities or new_frame:
+        #         velocity = 0.0
+        #         if track_id in last_positions:
+        #             vel_x = abs(abs_x - last_positions[track_id][0]) / \
+        #                 (current_time - last_time)
+        #             vel_y = abs(abs_y - last_positions[track_id][1]) / \
+        #                 (current_time - last_time)
+        #             velocity = math.sqrt(vel_x**2 + vel_y**2)
+
+        #         velocities[track_id].append(velocity)
+        #         if len(velocities) > 4:
+        #             velocities.pop(0)
+
+        #     smooth_vel = \
+        #         0.25 * velocities[track_id][-1] + \
+        #         0.25 * velocities[track_id][-2] + \
+        #         0.25 * velocities[track_id][-3] + \
+        #         0.25 * velocities[track_id][-4]
+
+        #     # Place the object in the environment.
+        #     glPushMatrix()
+        #     models.draw_model(cls, ui_x, ui_y)
+        #     # glScalef(0.25, 0.25, 0.25)
+        #     # glTranslatef(ui_x, -0.5, ui_y)
+        #     # cube()
+
+        #     # Display text above the object.
+        #     modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
+        #     projection = glGetDoublev(GL_PROJECTION_MATRIX)
+        #     viewport = glGetIntegerv(GL_VIEWPORT)
+        #     x_2d, y_2d, z_2d = gluProject(0, 1, 0, modelview, projection, viewport)
+        #     draw_text(x_2d, y_2d, f'{abs_depth:.2f}m {smooth_vel:.2f} m/s')
+        #     print("here")
+        #     glPopMatrix()
+
+        #     if not track_id in last_positions or new_frame:
+        #         last_positions[track_id] = (abs_x, abs_y)
+
     last_time = current_time
     new_frame = False
     
@@ -313,6 +441,18 @@ def yolo_thread() -> None:
     global model
     global cam
     global new_frame
+
+    global track_history
+    track_history = defaultdict(lambda: [])
+
+    global vanish_count
+    vanish_count = defaultdict(lambda: 0)
+
+    global vanish_ids
+
+    global classes_
+    classes_ = defaultdict(lambda: -1)
+
     
     print('starting yolo thread')
     while running:
