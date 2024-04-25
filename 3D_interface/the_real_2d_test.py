@@ -11,6 +11,8 @@ import time
 import models
 
 from collections import defaultdict
+import sys
+sys.path.append('../kalman/')
 from kalman import predict_next_position, update_position
 
 model = None # YOLOv8 global.
@@ -237,10 +239,10 @@ def display() -> None:
 
         # Get all detections for the current frame
         for box, track_id, cls in zip(boxes, track_ids, classes):
-            x, y, x_, y_, n = box
+            x, y, x_, y_ = box
             track = track_history[track_id] # default dict creates empty list at this key
             curr_tracks[track_id] = [float(x), float(y), float(x_), float(y_)]  # top left, bottom right
-            classes_[track_id] = cls
+            classes_[track_id] = int(cls.item())
 
 
         # go through all recorded detections and update accordingly
