@@ -13,19 +13,17 @@ from kalman import predict_next_position, update_position
 
 # Load the YOLOv8 model
 # model = YOLO('yolov8n.pt')
-model = YOLO('../../yolo/gator_results/weights/best.pt')
+model = YOLO('../best.pt')
 
 # model = YOLO('yolov8n-seg.pt')  # Load an official Segment model
 
 # Open the video file
-video_path = "./test3.mp4"
+video_path = "./test.mov"
 cap = cv2.VideoCapture(0)
 
 # Store the track history
 track_history = defaultdict(lambda: [])
 vanish_count = defaultdict(lambda: 0)
-ghost = defaultdict(lambda: True)
-vanish = defaultdict(lambda: False)
 
 
 
@@ -35,10 +33,16 @@ while cap.isOpened():
     success, frame = cap.read()
 
     curr_tracks = defaultdict(lambda: ())
+    vanish_ids = []
+
 
     if success:
         # Run YOLOv8 tracking on the frame, persisting tracks between frames
         results = model.track(frame, persist=True)
+
+
+        for result in results:
+            print("HHH")
 
         # if(not results[0].boxes.id):
         #     print("HHHkk")
@@ -50,8 +54,9 @@ while cap.isOpened():
 
         # Visualize the results on the frame
         annotated_frame = results[0].plot()
+    
 
-
+        # Get all detections for the current frame
         for box, track_id in zip(boxes, track_ids):
             x, y, w, h = box
 
@@ -78,23 +83,29 @@ while cap.isOpened():
             
 
 
-        for track_id, coordinates_history in track_history.items():
+        # go through all recorded detections and update accordingly
+        for track_id in track_history.keys():
 
 
             track = track_history[track_id]
             curr_track = curr_tracks[track_id]
 
-            if not track: # If track is empty but is showing up in track history, it was just detected for the first time
+
+            # If track is empty but is showing up in track history dict, it was just detected for the first time
+            if not track:
+
+                if not curr_track:
+                    print("SHOULD NOT BE HERE")
+                    exit(-1)
+
+                # otherwise first detection
                 predicted = curr_track
 
 
             elif len(track) < 18: # not enough to interpolate
                 if not curr_track: # showed up once and vanished after a few frames. will assume it was a ghost detection
-                    # track_history.pop(track_id) # delete ghost from record
-                    # print("HERE2")
-                    # track = []
-                    # vanish_count[track_id] = -1
-
+                    # print("GHOST")
+                    vanish_ids.append(track_id) # add to delete list
                     continue
                 else: # detected. still using measured values only
                     predicted = curr_track
@@ -103,8 +114,8 @@ while cap.isOpened():
                 if not curr_track:
                     # print("GONE")
                     vanish_count[track_id] += 1
-                    if vanish_count[track_id] > 5:
-                        vanish[track_id]
+                    if vanish_count[track_id] > 10: # if gone for 10 frames add to delete list
+                        vanish_ids.append(track_id) 
                         continue
                     predicted = predict_next_position(track)
                 else:
@@ -156,9 +167,8 @@ while cap.isOpened():
             points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
             cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
 
-        for status in vanish.values():
-            if not status:
-                track_history
+        for track_id in vanish_ids:
+            track_history.pop(track_id)
 
              
 
