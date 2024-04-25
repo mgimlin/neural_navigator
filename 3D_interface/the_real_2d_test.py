@@ -286,10 +286,10 @@ def display() -> None:
                     h = abs(curr_track[3] - curr_track[1])
                     midpoint = ( (curr_track[0] + curr_track[2])/2, (curr_track[1] + curr_track[3])/2 )
    
-                    x_shifted_left = midpoint - w/2
-                    y_shifted_upper = midpoint - h/2
-                    x_shifted_right = midpoint + w/2
-                    y_shifted_lower = midpoint + h/2
+                    x_shifted_left = midpoint - (w/2, w/2)
+                    y_shifted_upper = midpoint - (h/2, h/2)
+                    x_shifted_right = midpoint + (w/2, w/2)
+                    y_shifted_lower = midpoint + (h/2, h/2)
 
                     measured = [ x_shifted_left, y_shifted_upper, x_shifted_right, y_shifted_lower ]
 
