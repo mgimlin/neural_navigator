@@ -15,6 +15,9 @@ cam = None # Webcam global.
 running = True # The flag to stop the YOLOv8 thread.
 results = None # YOLOv8 results global.
 
+last_depths = {}
+current_depths = {}
+
 deltaZ = 0.0 # ?
 
 # obj file stuff?
@@ -23,7 +26,7 @@ model_files = {
     'person': 'objs/person.obj',
 }
 
-# Globals for the depth estimation.
+# Globals constants for the depth estimation.
 AVERAGE_HEIGHTS = {
     'person': 1.77,
 }
@@ -101,21 +104,19 @@ def draw_model(model_name: str) -> None:
         glEnd()
     
 def estimate_x(x1: float, x2: float, depth: float) -> float:
-    """Estimates the x value for the UI position.
+    """Estimates the x value of a position.
 
     Args:
         x1: A normalized x value of the bounding box.
         x2: A normalized x value of the bounding box.
-        depth: The exaggerated UI depth estimate.
+        depth: An estimated depth.
 
     Returns:
-        The x value for the exaggerated UI position.
+        The x value of the position.
     """
     center_x = (x1 + x2) / 2
     angle = CAMERA_FOV_X * (0.5 - center_x)
-    x = depth * math.tan(math.radians(angle))
-
-    return x
+    return depth * math.tan(math.radians(angle))
 
 def estimate_depth(y1: float, y2: float) -> float:
     """Estimates depth given the height of a bounding box and the camera parameters.
@@ -144,7 +145,9 @@ def estimate_depth(y1: float, y2: float) -> float:
     else:
         angle = CAMERA_FOV_Y * abs(0.5 - y_bottom)
         depth = CAMERA_HEIGHT / math.tan(math.radians(angle))
-        return 28438.52 * depth**0.00010355 - 28439.64
+        
+        return depth
+        # return 28438.52 * depth**0.00010355 - 28439.64
 
 def draw_text(x: float, y: float, text: str) -> None:
     """Renders text on the screen.
@@ -174,6 +177,8 @@ def display() -> None:
     the environment.
     """
     global results
+    global last_depths
+    global current_depths
     
     if not results:
         glutSwapBuffers()
@@ -186,16 +191,24 @@ def display() -> None:
     glRotatef(45, 1, 0, 0)
 
     for result in results:
+        # boxes = result.boxes.xyxyn
+        # track_ids = result.boxes.id.int().cpu().tolist()
+        # for box, track_id in zip(boxes, track_ids):
         for box in result.boxes.xyxyn:
             abs_depth = estimate_depth(box[1], box[3]) # The actual estimated depth.
+            abs_x = estimate_x(box[0], box[2], abs_depth)
+            abs_y = abs_depth
+
             ui_depth = -4 * abs_depth # The exaggerated depth for the UI.
+            ui_x = estimate_x(box[0], box[2], ui_depth)
+            ui_y = min(10 + ui_depth, 5)
+
+            # current_depths[track_id] = abs_depth
             
             # Place the object in the environment.
-            x = estimate_x(box[0], box[2], ui_depth)
-            y = min(10 + ui_depth, 5)
             glPushMatrix()
             glScalef(0.25, 0.25, 0.25)
-            glTranslatef(x, -0.5, y)
+            glTranslatef(ui_x, -0.5, ui_y)
             cube()
 
             # Display text above the object.
@@ -203,9 +216,11 @@ def display() -> None:
             projection = glGetDoublev(GL_PROJECTION_MATRIX)
             viewport = glGetIntegerv(GL_VIEWPORT)
             x_2d, y_2d, z_2d = gluProject(0, 1, 0, modelview, projection, viewport)
-            draw_text(x_2d, y_2d, f'{abs_depth:.2f}m')
+            draw_text(x_2d, y_2d, f'{actual_depth:.2f}m')
             
             glPopMatrix()
+
+            # last_depths[track_id] = current_depths[track_id]
     
     # FIXME
     # what is this
@@ -248,7 +263,7 @@ def yolo_thread() -> None:
         if not ret:
             return
         
-        results = model(frame)
+        results = model.track(frame)
 
 def move_backwards() -> None:
     """
@@ -274,7 +289,7 @@ def main() -> None:
     model = YOLO('../best.pt')
 
     # Set up the webcam.
-    cam = cv2.VideoCapture(0)
+    cam = cv2.VideoCapture(1)
     if not cam.isOpened():
         return
     

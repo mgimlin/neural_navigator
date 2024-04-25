@@ -30,13 +30,6 @@ colors = (
     (1, 0, 0), (0, 1, 0), (0, 0, 1),
     (1, 1, 0), (1, 0, 1), (0, 1, 1)
 )
-def cube():
-    glBegin(GL_QUADS)
-    for i, face in enumerate(faces):
-        glColor3fv(colors[i])  # Set color for each face
-        for vertex in face:
-            glVertex3fv(vertices[vertex])
-    glEnd()
 
 person = pywavefront.Wavefront('objects/BaseMesh.obj', collect_faces=True)
 car = pywavefront.Wavefront('objects/car.obj', collect_faces=True)
@@ -77,7 +70,7 @@ classDict = {
     15: trafficLight, 
     16: trafficLight,
     17: trafficLight,
-    18: cube(),
+    18: cone,
     19: scooter,
     20: truck,
     21: cone,
@@ -100,7 +93,7 @@ def RenderModel(obj):
         glEnd()
 
 
-model = YOLO('../../../NeuralNavigator/best.pt')
+model = YOLO('../../yolo/gator_results/weights/best.pt')
 cam = cv2.VideoCapture(0)
 if not cam.isOpened():
     exit()
