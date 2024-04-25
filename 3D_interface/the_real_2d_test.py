@@ -31,6 +31,14 @@ model_files = {
 # Globals constants for the depth estimation.
 AVERAGE_HEIGHTS = {
     'person': 1.77,
+    'car': 1.8,
+    'truck': 3.9624,
+    'bus': 3.9624,
+    'bike': 1.05,
+    'motorcycle': 1.05,
+    'scooter': 1.05,
+    'cone': 0.28,
+    'trafficLight': 1.2192,
 }
 CAMERA_HEIGHT = 1
 CAMERA_FOV_X = 90
