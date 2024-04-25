@@ -57,7 +57,7 @@ AVERAGE_HEIGHTS = {
     23: 1.1176,
 
 }
-CAMERA_HEIGHT = 0.99
+CAMERA_HEIGHT = 0.93
 CAMERA_FOV_X = 90
 CAMERA_FOV_Y = 50
 CAMERA_TILT = 0
@@ -280,18 +280,9 @@ def display() -> None:
 
     last_time = current_time
     new_frame = False
-    
-    # FIXME
-    # what is this
-    
-    # glPushMatrix()
-    # draw_model('person')
-    # 
-    # modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
-    # projection = glGetDoublev(GL_PROJECTION_MATRIX)
-    # viewport = glGetIntegerv(GL_VIEWPORT)
-    # gluProject(0, 1, 0, modelview, projection, viewport)
-    # glPopMatrix()
+
+    render_time = 1000 * (time.time() - current_time)
+    draw_text(10, 10, f'rendered in {render_time:.2f}ms')
             
     glutSwapBuffers()
 
@@ -346,7 +337,6 @@ def main() -> None:
     global cam
     global running
     models.preload_models()
-
 
     # Set up YOLOv8.
     model = YOLO('../best.pt')
