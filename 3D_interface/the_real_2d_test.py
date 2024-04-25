@@ -263,7 +263,7 @@ def display() -> None:
 
             elif len(track) < 18: # not enough to interpolate
                 if not curr_track: # showed up once and vanished after a few frames. will assume it was a ghost detection
-                    # print("GHOST")
+                    print("GHOST")
                     vanish_ids.append(track_id) # add to delete list
                     continue
                 else: # detected. still using measured values only
@@ -272,13 +272,23 @@ def display() -> None:
 
             elif len(track) >= 18: # enough to interpolate
                 if not curr_track:
-                    # print("GONE")
+                    print("GONE")
                     vanish_count[track_id] += 1
                     if vanish_count[track_id] > 10: # if gone for 10 frames add to delete list
                         vanish_ids.append(track_id) 
                         continue
                     predicted = predict_next_position(track) #midpoint
                     midpoint = predicted
+
+                    x_shifted_left = midpoint[0] - w/2
+                    y_shifted_upper = midpoint[1] - h/2
+                    x_shifted_right = midpoint[0] + w/2
+                    y_shifted_lower = midpoint[1] + h/2
+
+                    predicted = [ x_shifted_left, y_shifted_upper, x_shifted_right, y_shifted_lower ]
+
+
+
 
 
                 else:
