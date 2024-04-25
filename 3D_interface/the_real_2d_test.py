@@ -258,6 +258,8 @@ def display() -> None:
 
                 # otherwise first detection
                 predicted = curr_track
+                midpoint = ( (curr_track[0] + curr_track[2])/2, (curr_track[1] + curr_track[3])/2 )
+
 
             elif len(track) < 18: # not enough to interpolate
                 if not curr_track: # showed up once and vanished after a few frames. will assume it was a ghost detection
@@ -266,6 +268,7 @@ def display() -> None:
                     continue
                 else: # detected. still using measured values only
                     predicted = curr_track
+                    midpoint = ( (curr_track[0] + curr_track[2])/2, (curr_track[1] + curr_track[3])/2 )
 
             elif len(track) >= 18: # enough to interpolate
                 if not curr_track:
@@ -274,32 +277,41 @@ def display() -> None:
                     if vanish_count[track_id] > 10: # if gone for 10 frames add to delete list
                         vanish_ids.append(track_id) 
                         continue
-                    predicted = predict_next_position(track)                   
+                    predicted = predict_next_position(track) #midpoint
+                    midpoint = predicted
 
 
                 else:
                     print("NO VANISH, CHECK ERROR")
 
-                    predicted = predict_next_position(track)
+                    predicted = predict_next_position(track) #midpoint
 
                     w = abs(curr_track[2] - curr_track[0])
                     h = abs(curr_track[3] - curr_track[1])
-                    midpoint = ( (curr_track[0] + curr_track[2])/2, (curr_track[1] + curr_track[3])/2 )
+
+                    midpoint = predicted
    
-                    x_shifted_left = midpoint - (w/2, w/2)
-                    y_shifted_upper = midpoint - (h/2, h/2)
-                    x_shifted_right = midpoint + (w/2, w/2)
-                    y_shifted_lower = midpoint + (h/2, h/2)
+                    x_shifted_left = midpoint[0] - w/2
+                    y_shifted_upper = midpoint[1] - h/2
+                    x_shifted_right = midpoint[0] + w/2
+                    y_shifted_lower = midpoint[1] + h/2
 
-                    measured = [ x_shifted_left, y_shifted_upper, x_shifted_right, y_shifted_lower ]
+                    predicted = [ x_shifted_left, y_shifted_upper, x_shifted_right, y_shifted_lower ]
 
-                    predicted = update_position(measured, predicted)
+                    predicted = update_position(curr_track, predicted)
 
-            w = abs(predicted[2] - predicted[0])
-            h = abs(predicted[3] - predicted[1])
-            midpoint = ( (predicted[0] + predicted[2])/2, (predicted[1] + predicted[3])/2 )
+                    midpoint = ( (predicted[0] + predicted[2])/2, (predicted[1] + predicted[3])/2 )
 
-            print("ID:", track_id, "coordinates", curr_track, "predicted", predicted)
+
+                    
+
+                    
+
+            # w = abs(predicted[2] - predicted[0])
+            # h = abs(predicted[3] - predicted[1])
+            # midpoint = ( (predicted[0] + predicted[2])/2, (predicted[1] + predicted[3])/2 )
+
+            # print("ID:", track_id, "coordinates", curr_track, "predicted", predicted)
 
             track.append(midpoint)  # x, y center point
             
