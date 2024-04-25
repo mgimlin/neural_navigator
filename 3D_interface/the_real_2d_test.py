@@ -218,8 +218,10 @@ def display() -> None:
             ui_x = estimate_x(box[0], box[2], ui_depth)
             ui_y = min(10 + ui_depth, 5)
 
+            if not track_id in velocities:
+                velocities[track_id] = [0.0, 0.0, 0.0, 0.0]
+
             if not track_id in velocities or new_frame:
-                depth_change = 0.0
                 velocity = 0.0
                 if track_id in last_positions:
                     vel_x = abs(abs_x - last_positions[track_id][0]) / \
@@ -227,14 +229,17 @@ def display() -> None:
                     vel_y = abs(abs_y - last_positions[track_id][1]) / \
                         (current_time - last_time)
                     velocity = math.sqrt(vel_x**2 + vel_y**2)
-                    
-                    change_x = abs(abs_x - last_positions[track_id][0])
-                    change_y = abs(abs_y - last_positions[track_id][1])
-                    depth_change = math.sqrt(change_x**2 + change_y**2)
-                    print(track_id, depth_change, velocity, new_frame)
 
-                velocities[track_id] = velocity
-            
+                velocities[track_id].append(velocity)
+                if len(velocities) > 4:
+                    velocities.pop(0)
+
+            smooth_vel = \
+                0.25 * velocities[track_id][-1] + \
+                0.25 * velocities[track_id][-2] + \
+                0.25 * velocities[track_id][-3] + \
+                0.25 * velocities[track_id][-4]
+
             # Place the object in the environment.
             glPushMatrix()
             glScalef(0.25, 0.25, 0.25)
@@ -246,7 +251,7 @@ def display() -> None:
             projection = glGetDoublev(GL_PROJECTION_MATRIX)
             viewport = glGetIntegerv(GL_VIEWPORT)
             x_2d, y_2d, z_2d = gluProject(0, 1, 0, modelview, projection, viewport)
-            draw_text(x_2d, y_2d, f'{abs_depth:.2f}m {velocities[track_id]:.2f} m/s')
+            draw_text(x_2d, y_2d, f'{abs_depth:.2f}m {smooth_vel:.2f} m/s')
             
             glPopMatrix()
 
